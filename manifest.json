@@ -3,7 +3,7 @@
   "short_name": "GymLog",
   "description": "Aplikacja PWA do monitorowania postępów na siłowni z funkcjami offline",
   "start_url": "./index.html",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#1a1a1a",
   "theme_color": "#ffa500",
   "orientation": "portrait-primary",

@@ -163,6 +163,22 @@
     <script src="./js/ui.js"></script>
     <script src="./js/index-page.js"></script>
 
+        <!-- Request fullscreen on first user gesture (some browsers require user interaction) -->
+        <script>
+        (function(){
+            function requestFull() {
+                if (document.fullscreenElement) return;
+                const el = document.documentElement;
+                const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+                if (request) {
+                    request.call(el).catch(()=>{});
+                }
+            }
+            window.addEventListener('click', requestFull, { once: true });
+            window.addEventListener('touchstart', requestFull, { once: true });
+        })();
+        </script>
+
     <!-- Templates (hidden) -->
     <template id="sessionCardTemplate">
         <div class="card mb-3 session-card">
