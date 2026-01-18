@@ -1,0 +1,101 @@
+/* GymLog - Basic Styles */
+
+:root {
+    --primary-color: #ffa500;
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background-color: var(--card-bg);
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 2px solid var(--primary-color);
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+}
+
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: all 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #ff8c00;
+    border-color: #ff8c00;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 165, 0, 0.3);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 165, 0, 0.25);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-color);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
