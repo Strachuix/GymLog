@@ -75,8 +75,8 @@ function getPersonalRecords() {
     return records.sort((a, b) => b.weight - a.weight);
 }
 
-// Export data to CSV
-function exportToCSV() {
+// Export data to JSON
+function exportToJSON() {
     const sets = loadSets();
     
     if (sets.length === 0) {
@@ -84,45 +84,39 @@ function exportToCSV() {
         return;
     }
     
-    // Create CSV content with ID for import
-    let csv = 'ID,Data,Godzina,Ćwiczenie,Ciężar (kg),Powtórzenia\n';
-    
-    sets.forEach(set => {
-        const date = new Date(set.timestamp);
-        const dateStr = date.toLocaleDateString('pl-PL');
-        const timeStr = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-        csv += `${set.id},${dateStr},${timeStr},"${set.exercise}",${set.weight},${set.reps}\n`;
-    });
+    // Create JSON content
+    const json = JSON.stringify(sets, null, 2);
     
     // Create blob and download
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `gymlog_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `gymlog_export_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 }
 
-// Import data from CSV
-function importFromCSV(file) {
+// Import data from JSON
+function importFromJSON(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         
         reader.onload = (e) => {
             try {
-                const csv = e.target.result;
-                const lines = csv.split('\n').filter(line => line.trim());
+                const importedSets = JSON.parse(e.target.result);
                 
-                if (lines.length < 2) {
-                    reject(new Error('Plik CSV jest pusty'));
+                if (!Array.isArray(importedSets)) {
+                    reject(new Error('Nieprawidłowy format pliku JSON'));
                     return;
                 }
                 
-                const header = lines[0].toLowerCase();
-                const hasId = header.includes('id');
+                if (importedSets.length === 0) {
+                    reject(new Error('Plik JSON jest pusty'));
+                    return;
+                }
                 
                 const existingSets = loadSets();
                 const existingIds = new Set(existingSets.map(s => s.id));
@@ -131,57 +125,39 @@ function importFromCSV(file) {
                 let skipped = 0;
                 const newSets = [];
                 
-                for (let i = 1; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (!line) continue;
-                    
-                    // Parse CSV line (handle quotes)
-                    const matches = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
-                    if (!matches) continue;
-                    
-                    const values = matches.map(v => v.replace(/^"|"$/g, '').trim());
-                    
-                    let id, dateStr, timeStr, exercise, weight, reps;
-                    
-                    if (hasId && values.length >= 6) {
-                        // Format with ID: ID,Data,Godzina,Ćwiczenie,Ciężar,Powtórzenia
-                        [id, dateStr, timeStr, exercise, weight, reps] = values;
-                        
-                        // Skip if ID already exists
-                        if (existingIds.has(id)) {
-                            skipped++;
-                            continue;
-                        }
-                    } else if (values.length >= 5) {
-                        // Format without ID: Data,Godzina,Ćwiczenie,Ciężar,Powtórzenia
-                        [dateStr, timeStr, exercise, weight, reps] = values;
-                        id = crypto.randomUUID();
-                    } else {
-                        continue; // Invalid line
+                importedSets.forEach(set => {
+                    // Validate required fields
+                    if (!set.exercise || set.weight === undefined || set.reps === undefined) {
+                        return; // Skip invalid entries
                     }
                     
-                    // Parse date and time
-                    const [day, month, year] = dateStr.split(/[./]/);
-                    const [hours, minutes] = timeStr.split(':');
-                    const timestamp = new Date(
-                        year || new Date().getFullYear(),
-                        (month || 1) - 1,
-                        day || 1,
-                        hours || 0,
-                        minutes || 0
-                    ).getTime();
+                    // Generate ID if missing
+                    if (!set.id) {
+                        set.id = crypto.randomUUID();
+                    }
+                    
+                    // Skip if ID already exists
+                    if (existingIds.has(set.id)) {
+                        skipped++;
+                        return;
+                    }
+                    
+                    // Ensure timestamp exists
+                    if (!set.timestamp) {
+                        set.timestamp = Date.now();
+                    }
                     
                     newSets.push({
-                        id: id,
-                        exercise: exercise,
-                        weight: parseFloat(weight),
-                        reps: parseInt(reps),
-                        timestamp: timestamp
+                        id: set.id,
+                        exercise: set.exercise,
+                        weight: parseFloat(set.weight),
+                        reps: parseInt(set.reps),
+                        timestamp: set.timestamp
                     });
                     
                     imported++;
-                    existingIds.add(id);
-                }
+                    existingIds.add(set.id);
+                });
                 
                 if (imported > 0) {
                     // Merge and sort by timestamp (newest first)
@@ -192,7 +168,11 @@ function importFromCSV(file) {
                 
                 resolve({ imported, skipped });
             } catch (err) {
-                reject(err);
+                if (err instanceof SyntaxError) {
+                    reject(new Error('Nieprawidłowy format JSON'));
+                } else {
+                    reject(err);
+                }
             }
         };
         
