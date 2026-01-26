@@ -217,17 +217,29 @@
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 3);
             
-            container.innerHTML = topExercises.map(({ name }) => {
-                const chartId = `chart-${name.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
-                return `
-                    <div class="bg-dark-card border border-gray-800 rounded-xl p-5">
-                        <h3 class="font-bold text-lg mb-4 text-neon-green">${name}</h3>
-                        <div class="bg-gray-900 rounded-lg p-3">
-                            <canvas id="${chartId}"></canvas>
+            container.innerHTML = topExercises
+                .filter(({ name }) => grouped[name].length >= 2)
+                .map(({ name }) => {
+                    const chartId = `chart-${name.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
+                    return `
+                        <div class="bg-dark-card border border-gray-800 rounded-xl p-5">
+                            <h3 class="font-bold text-lg mb-4 text-neon-green">${name}</h3>
+                            <div class="bg-gray-900 rounded-lg p-3">
+                                <canvas id="${chartId}"></canvas>
+                            </div>
                         </div>
+                    `;
+                }).join('');
+            
+            // If no charts to display
+            if (container.innerHTML === '') {
+                container.innerHTML = `
+                    <div class="bg-dark-card border-2 border-dashed border-gray-800 rounded-2xl p-8 text-center">
+                        <p class="text-gray-600 font-medium">Potrzebujesz co najmniej 2 treningi dla każdego ćwiczenia</p>
                     </div>
                 `;
-            }).join('');
+                return;
+            }
             
             // Create charts
             topExercises.forEach(({ name }) => {
@@ -235,7 +247,7 @@
                 const chartId = `chart-${name.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
                 const ctx = document.getElementById(chartId);
                 
-                if (ctx && sets.length > 1) {
+                if (ctx && sets.length >= 2) {
                     new Chart(ctx, {
                         type: 'line',
                         data: {
