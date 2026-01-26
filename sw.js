@@ -1,4 +1,5 @@
-const CACHE_NAME = 'gymlog-v1';
+const VERSION = '1.0.1';
+const CACHE_NAME = `gymlog-v${VERSION}`;
 const urlsToCache = [
   '/',
   '/index.html',
@@ -14,12 +15,25 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
+        console.log('Opened cache:', CACHE_NAME);
         return cache.addAll(urlsToCache);
       })
       .catch(err => console.error('Cache error:', err))
   );
   self.skipWaiting();
+});
+
+// Message event - obs\u0142uga SKIP_WAITING
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({
+      type: 'VERSION',
+      version: VERSION
+    });
+  }
 });
 
 // Fetch event - serve from cache, fallback to network
@@ -67,10 +81,22 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      console.log('GymLog Service Worker activated, version:', VERSION);
+      // Powiadom wszystkie karty o nowej wersji
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'VERSION',
+            version: VERSION
+          });
+        });
+      });
     })
   );
   self.clients.claim();

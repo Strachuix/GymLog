@@ -157,18 +157,84 @@
     </nav>
 
     <!-- Toast Notification -->
+    <!-- Toast notifications -->
     <div id="toast" class="hidden fixed top-6 left-1/2 -translate-x-1/2 bg-neon-green text-dark-bg px-6 py-3 rounded-full font-bold shadow-2xl z-50 animate-slide-in">
         ✓ Seria zapisana!
+    </div>
+    
+    <!-- Update notification -->
+    <div id="updateNotification" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 bg-neon-green text-dark-bg px-6 py-4 rounded-2xl font-bold shadow-2xl z-50 max-w-sm animate-slide-in">
+        <div class="flex items-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <div class="flex-1">
+                <p class="text-sm">Dostępna aktualizacja!</p>
+                <p class="text-xs opacity-80">Kliknij aby odświeżyć</p>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
     <script src="app.js"></script>
     <script>
-        // Register Service Worker
+        // Register Service Worker with update checking
         if ('serviceWorker' in navigator) {
+            let refreshing = false;
+            
+            // Nasłuchuj zmian kontrolera (nowy SW przejął kontrolę)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
+            });
+            
             navigator.serviceWorker.register('/sw.js')
-                .then(reg => console.log('Service Worker registered', reg))
+                .then(reg => {
+                    console.log('Service Worker registered');
+                    
+                    // Sprawdź aktualizacje co 60 sekund
+                    setInterval(() => {
+                        reg.update();
+                    }, 60000);
+                    
+                    // Sprawdź aktualizację przy starcie
+                    reg.update();
+                    
+                    // Nasłuchuj na nowego Service Worker czekającego
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Nowa wersja dostępna
+                                showUpdateNotification();
+                            }
+                        });
+                    });
+                })
                 .catch(err => console.error('Service Worker error', err));
+            
+            // Nasłuchuj wiadomości od Service Worker
+            navigator.serviceWorker.addEventListener('message', event => {
+                if (event.data.type === 'VERSION') {
+                    console.log('Current Service Worker version:', event.data.version);
+                }
+            });
+        }
+        
+        function showUpdateNotification() {
+            const notification = document.getElementById('updateNotification');
+            notification.classList.remove('hidden');
+            
+            notification.onclick = () => {
+                // Powiadom czekającego SW aby przejął kontrolę
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg.waiting) {
+                        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
+            };
         }
 
         // Screen Wake Lock API
