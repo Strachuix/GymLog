@@ -12,6 +12,34 @@ function saveSets(sets) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
 }
 
+// Delete a set by ID
+function deleteSet(id) {
+    const sets = loadSets();
+    const filtered = sets.filter(s => s.id !== id);
+    saveSets(filtered);
+    return filtered.length < sets.length; // Return true if something was deleted
+}
+
+// Update a set by ID
+function updateSet(id, updates) {
+    const sets = loadSets();
+    const index = sets.findIndex(s => s.id === id);
+    
+    if (index === -1) {
+        return false; // Set not found
+    }
+    
+    // Update only provided fields
+    sets[index] = {
+        ...sets[index],
+        ...updates,
+        id: sets[index].id // Preserve ID
+    };
+    
+    saveSets(sets);
+    return true;
+}
+
 // Get unique exercise names for datalist
 function getExerciseHistory() {
     const sets = loadSets();

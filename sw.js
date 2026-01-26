@@ -1,9 +1,10 @@
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 const CACHE_NAME = `gymlog-v${VERSION}`;
 const urlsToCache = [
   '/',
   '/index.html',
   '/stats.html',
+  '/history.html',
   '/app.js',
   '/manifest.json',
   'https://cdn.tailwindcss.com',
