@@ -1,75 +1,35 @@
 {
-  "name": "GymLog - Monitor postępów treningowych",
+  "name": "GymLog - Tracker Treningowy",
   "short_name": "GymLog",
-  "description": "Aplikacja PWA do monitorowania postępów na siłowni z funkcjami offline",
-  "start_url": "./index.html",
-  "display": "fullscreen",
-  "background_color": "#1a1a1a",
-  "theme_color": "#ffa500",
-  "orientation": "portrait-primary",
+  "description": "Śledź swoje treningi i postępy w siłowni",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "icons/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-512x512.png",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%2310b981' width='512' height='512' rx='128'/%3E%3Cpath fill='white' d='M150 200h40v112h-40zm172 0h40v112h-40zm-86-50h40v212h-40zm-43 25h40v162h-40zm86 0h40v162h-40z'/%3E%3C/svg%3E",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],
   "categories": ["health", "fitness", "lifestyle"],
-  "screenshots": [
+  "shortcuts": [
     {
-      "src": "screenshots/desktop.png",
-      "sizes": "1920x1080",
-      "type": "image/png",
-      "form_factor": "wide"
+      "name": "Dodaj serię",
+      "short_name": "Nowa seria",
+      "description": "Szybko dodaj nową serię",
+      "url": "/index.html",
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 4v16m8-8H4'/%3E%3C/svg%3E", "sizes": "96x96" }]
     },
     {
-      "src": "screenshots/mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "name": "Statystyki",
+      "short_name": "Stats",
+      "description": "Zobacz swoje statystyki",
+      "url": "/stats.html",
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 19v-6H5v6h4zm6 0V9h-4v10h4zm6 0V5h-4v14h4z'/%3E%3C/svg%3E", "sizes": "96x96" }]
     }
   ]
 }

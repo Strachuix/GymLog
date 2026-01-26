@@ -3,143 +3,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ffa500">
+    <meta name="theme-color" content="#121212">
+    <link rel="manifest" href="manifest.json">
     <title>GymLog - Statystyki</title>
-    <link rel="manifest" href="./manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192x192.png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="./css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon-green': '#10b981',
+                        'dark-bg': '#121212',
+                        'dark-card': '#1e1e1e',
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="./index.html">
-                <i class="bi bi-lightning-charge-fill"></i> GymLog
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="./index.html">
-                            <i class="bi bi-house-fill"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="./stats.html">
-                            <i class="bi bi-graph-up"></i> Statystyki
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="./profile.html">
-                            <i class="bi bi-person-fill"></i> Profil
-                        </a>
-                    </li>
-                </ul>
+<body class="bg-dark-bg text-gray-100 min-h-screen pb-20">
+    <div class="max-w-lg mx-auto p-4 sm:p-6">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8 pt-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-neon-green p-2.5 rounded-xl">
+                    <svg class="w-7 h-7 text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-black">Statystyki</h1>
             </div>
+            <div class="flex items-center gap-2">
+                <button 
+                    id="exportBtn"
+                    class="p-2.5 text-gray-500 hover:text-neon-green transition-colors bg-dark-card rounded-lg"
+                    title="Eksportuj do CSV"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="space-y-8">
+            <!-- Top 3 Exercises -->
+            <section>
+                <div class="flex items-center gap-2 mb-4">
+                    <svg class="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <h2 class="text-xl font-black text-gray-300">Top 3 Ćwiczenia</h2>
+                </div>
+                <div id="topExercises" class="space-y-3">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Personal Records -->
+            <section>
+                <div class="flex items-center gap-2 mb-4">
+                    <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                    <h2 class="text-xl font-black text-gray-300">Rekordy Życiowe (PR)</h2>
+                </div>
+                <div id="personalRecords" class="space-y-3">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Progress Charts -->
+            <section>
+                <div class="flex items-center gap-2 mb-4">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                    </svg>
+                    <h2 class="text-xl font-black text-gray-300">Wykresy Postępu</h2>
+                </div>
+                <div id="charts" class="space-y-6">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-gray-800 z-50">
+        <div class="max-w-lg mx-auto flex">
+            <a href="index.html" class="flex-1 flex flex-col items-center justify-center py-4 text-gray-500 hover:text-gray-400 transition-colors">
+                <svg class="w-7 h-7 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10M7 3h10M12 3v4M6 7h12v10H6V7zm1 3v4m10-4v4"/>
+                </svg>
+                <span class="text-xs font-bold">TRENING</span>
+            </a>
+            <a href="stats.html" class="flex-1 flex flex-col items-center justify-center py-4 text-neon-green">
+                <svg class="w-7 h-7 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span class="text-xs font-bold">STATYSTYKI</span>
+            </a>
         </div>
     </nav>
 
-    <div class="container my-4">
-        <h2 class="mb-4"><i class="bi bi-graph-up"></i> Statystyki treningowe</h2>
+    <!-- Scripts -->
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registered', reg))
+                .catch(err => console.error('Service Worker error', err));
+        }
 
-        <!-- Overall Stats -->
-        <div class="row mb-4">
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-value" id="totalSessions">0</div>
-                        <div class="stat-label">Wszystkie sesje</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-value" id="totalExercises">0</div>
-                        <div class="stat-label">Wszystkie ćwiczenia</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-value" id="totalWeight">0</div>
-                        <div class="stat-label">Całkowity ciężar (kg)</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-value" id="totalTime">0</div>
-                        <div class="stat-label">Całkowity czas</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            displayTopExercises();
+            displayPersonalRecords();
+            displayCharts();
+            
+            document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+        });
 
-        <!-- Monthly Progress Chart -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-calendar3"></i> Miesięczny postęp</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="monthlyChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Category Distribution -->
-        <div class="row mb-4">
-            <div class="col-md-6 mb-3">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Kategorie ćwiczeń</h5>
+        // Display top 3 exercises
+        function displayTopExercises() {
+            const topExercises = getTopExercises();
+            const container = document.getElementById('topExercises');
+            
+            if (topExercises.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-dark-card border-2 border-dashed border-gray-800 rounded-2xl p-8 text-center">
+                        <p class="text-gray-600 font-medium">Brak danych</p>
                     </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="categoryChart"></canvas>
+                `;
+                return;
+            }
+            
+            const medals = ['🥇', '🥈', '🥉'];
+            
+            container.innerHTML = topExercises.map((ex, i) => `
+                <div class="bg-dark-card border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">${medals[i]}</span>
+                        <div>
+                            <p class="font-bold text-lg">${ex.name}</p>
+                            <p class="text-xs text-gray-500">${ex.count} ${ex.count === 1 ? 'seria' : 'serii'}</p>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Top ćwiczenia</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="topExercises"></div>
+                    <div class="text-right">
+                        <p class="text-neon-green font-black text-sm">${ex.totalVolume.toFixed(0)}</p>
+                        <p class="text-xs text-gray-600">objętość</p>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            `).join('');
+        }
 
-    <button id="themeToggle" aria-label="Toggle theme">
-        <i class="bi bi-moon-stars-fill"></i>
-    </button>
+        // Display personal records with share button
+        function displayPersonalRecords() {
+            const records = getPersonalRecords();
+            const container = document.getElementById('personalRecords');
+            
+            if (records.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-dark-card border-2 border-dashed border-gray-800 rounded-2xl p-8 text-center">
+                        <p class="text-gray-600 font-medium">Brak rekordów</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = records.map(record => `
+                <div class="bg-dark-card border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors">
+                    <div>
+                        <p class="font-bold text-lg">${record.exercise}</p>
+                        <p class="text-xs text-gray-500">${new Date(record.date).toLocaleDateString('pl-PL')}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded-lg">
+                            <span class="text-neon-green font-black text-2xl">${record.weight}</span>
+                            <span class="text-gray-600 text-xs font-bold">kg</span>
+                            <span class="text-gray-700 mx-1">×</span>
+                            <span class="text-white font-black text-lg">${record.reps}</span>
+                        </div>
+                        <button 
+                            class="p-2 text-gray-500 hover:text-neon-green transition-colors"
+                            onclick="shareRecord('${record.exercise}', ${record.weight}, ${record.reps})"
+                            title="Udostępnij rekord"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="./js/db.js"></script>
-    <script src="./js/theme.js"></script>
-    <script src="./js/notifications.js"></script>
-    <script src="./js/sessions.js"></script>
-    <script src="./js/exercises.js"></script>
-    <script src="./js/ui.js"></script>
-    <script src="./js/stats-page.js"></script>
-
-    <!-- Templates -->
-    <template id="topExerciseItemTemplate">
-        <div class="list-group-item d-flex justify-content-between align-items-center">
-            <span><strong class="exercise-rank"></strong> <span class="exercise-name"></span></span>
-            <span class="badge bg-primary rounded-pill exercise-count"></span>
-        </div>
-    </template>
+        // Display charts for top 3 exercises
+        function displayCharts() {
+            const grouped = groupSetsByExercise();
+            const exercises = Object.keys(grouped);
+            const container = document.getElementById('charts');
+            
+            if (exercises.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-dark-card border-2 border-dashed border-gray-800 rounded-2xl p-8 text-center">
+                        <p class="text-gray-600 font-medium">Brak danych do wyświetlenia</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Top 3 exercises by count
+            const topExercises = exercises
+                .map(name => ({ name, count: grouped[name].length }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 3);
+            
+            container.innerHTML = topExercises.map(({ name }) => {
+                const chartId = `chart-${name.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
+                return `
+                    <div class="bg-dark-card border border-gray-800 rounded-xl p-5">
+                        <h3 class="font-bold text-lg mb-4 text-neon-green">${name}</h3>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <canvas id="${chartId}"></canvas>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Create charts
+            topExercises.forEach(({ name }) => {
+                const sets = grouped[name].slice().reverse(); // Oldest to newest
+                const chartId = `chart-${name.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
+                const ctx = document.getElementById(chartId);
+                
+                if (ctx && sets.length > 1) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: sets.map((_, i) => `#${i + 1}`),
+                            datasets: [
+                                {
+                                    label: 'Ciężar (kg)',
+                                    data: sets.map(s => s.weight),
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    borderWidth: 3,
+                                    tension: 0.3,
+                                    fill: true,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                    titleColor: '#10b981',
+                                    bodyColor: '#fff',
+                                    borderColor: '#10b981',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    displayColors: false,
+                                    callbacks: {
+                                        title: (items) => {
+                                            const index = items[0].dataIndex;
+                                            const date = new Date(sets[index].timestamp);
+                                            return date.toLocaleString('pl-PL', { 
+                                                day: '2-digit', 
+                                                month: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            });
+                                        },
+                                        label: (context) => {
+                                            const set = sets[context.dataIndex];
+                                            return `${set.weight}kg × ${set.reps} powtórzeń`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                    ticks: { color: '#6b7280', font: { size: 10 } }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                    ticks: { 
+                                        color: '#10b981', 
+                                        font: { size: 11, weight: 'bold' },
+                                        callback: (value) => value + ' kg'
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    </script>
 </body>
 </html>

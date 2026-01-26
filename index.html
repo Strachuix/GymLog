@@ -3,200 +3,313 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="GymLog - Aplikacja PWA do monitorowania postępów na siłowni">
-    <meta name="theme-color" content="#ffa500">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>GymLog - Dashboard</title>
-    <link rel="manifest" href="./manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192x192.png">
-    <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="./css/style.css">
+    <meta name="theme-color" content="#121212">
+    <meta name="description" content="Śledź swoje treningi i postępy w siłowni">
+    <link rel="manifest" href="manifest.json">
+    <title>GymLog - Trening</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon-green': '#10b981',
+                        'dark-bg': '#121212',
+                        'dark-card': '#1e1e1e',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in { animation: slideIn 0.3s ease-out; }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); }
+        }
+        .pulse-glow { animation: pulse-glow 2s infinite; }
+    </style>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="./index.html">
-                <i class="bi bi-lightning-charge-fill"></i> GymLog
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="./index.html">
-                            <i class="bi bi-house-fill"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="./stats.html">
-                            <i class="bi bi-graph-up"></i> Statystyki
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="./profile.html">
-                            <i class="bi bi-person-fill"></i> Profil
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <button class="btn btn-primary ms-2" id="installBtn">
-                            <i class="bi bi-download"></i> Zainstaluj
-                        </button>
-                    </li>
-                </ul>
+<body class="bg-dark-bg text-gray-100 min-h-screen pb-20">
+    <div class="max-w-lg mx-auto p-4 sm:p-6">
+        <!-- Header with Wake Lock Indicator -->
+        <header class="flex items-center justify-between mb-8 pt-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-neon-green p-2.5 rounded-xl">
+                    <svg class="w-7 h-7 text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10M7 3h10M12 3v4M6 7h12v10H6V7zm1 3v4m10-4v4"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-black">Gym<span class="text-neon-green">Log</span></h1>
             </div>
+            <div id="wakeLockIndicator" class="hidden flex items-center gap-2 bg-dark-card px-3 py-2 rounded-lg">
+                <div class="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
+                <svg class="w-4 h-4 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+        </header>
+
+        <!-- Training Form -->
+        <main>
+            <form id="trainingForm" class="space-y-5">
+                <!-- Exercise Name -->
+                <div>
+                    <label for="exercise" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                        Ćwiczenie
+                    </label>
+                    <input 
+                        type="text" 
+                        id="exercise" 
+                        list="exerciseHistory"
+                        required
+                        class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-5 text-xl font-semibold focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-600 text-gray-100"
+                        placeholder="np. Wyciskanie sztangi"
+                    >
+                    <datalist id="exerciseHistory"></datalist>
+                </div>
+
+                <!-- Weight and Reps Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="weight" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                            Ciężar (kg)
+                        </label>
+                        <input 
+                            type="number" 
+                            id="weight" 
+                            step="0.5"
+                            required
+                            inputmode="decimal"
+                            class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-neon-green"
+                            placeholder="0"
+                        >
+                    </div>
+                    <div>
+                        <label for="reps" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                            Powtórzenia
+                        </label>
+                        <input 
+                            type="number" 
+                            id="reps" 
+                            min="1"
+                            required
+                            inputmode="numeric"
+                            class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-gray-100"
+                            placeholder="0"
+                        >
+                    </div>
+                </div>
+
+                <!-- Suggestion Box -->
+                <div id="suggestionBox" class="hidden bg-neon-green/10 border-2 border-neon-green/30 rounded-2xl p-4 animate-slide-in">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-neon-green p-2 rounded-lg">
+                            <svg class="w-5 h-5 text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-neon-green uppercase tracking-wider">Progresja!</p>
+                            <p id="suggestionText" class="text-white font-semibold text-sm"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    type="submit"
+                    class="w-full bg-neon-green hover:bg-emerald-400 active:scale-98 text-dark-bg font-black text-xl py-5 rounded-2xl shadow-lg shadow-neon-green/30 transition-all flex items-center justify-center gap-3 pulse-glow"
+                >
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    DODAJ SERIĘ
+                </button>
+            </form>
+
+            <!-- Recent Sets -->
+            <section class="mt-8">
+                <h2 class="text-lg font-bold text-gray-400 uppercase tracking-wide mb-4">Ostatnie 5 serii</h2>
+                <div id="recentSets" class="space-y-3">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-gray-800 z-50">
+        <div class="max-w-lg mx-auto flex">
+            <a href="index.html" class="flex-1 flex flex-col items-center justify-center py-4 text-neon-green">
+                <svg class="w-7 h-7 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 21h10M7 3h10M12 3v4M6 7h12v10H6V7zm1 3v4m10-4v4"/>
+                </svg>
+                <span class="text-xs font-bold">TRENING</span>
+            </a>
+            <a href="stats.html" class="flex-1 flex flex-col items-center justify-center py-4 text-gray-500 hover:text-gray-400 transition-colors">
+                <svg class="w-7 h-7 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span class="text-xs font-bold">STATYSTYKI</span>
+            </a>
         </div>
     </nav>
 
-    <div id="onlineStatus" class="bg-success text-white">Online</div>
-
-    <div class="container my-4">
-        <!-- Quick Stats -->
-        <div class="row mb-4" id="statsRow">
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-value" id="totalSessions">0</div>
-                        <div class="stat-label">Sesje</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-value" id="totalExercises">0</div>
-                        <div class="stat-label">Ćwiczenia</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-value" id="thisWeekSessions">0</div>
-                        <div class="stat-label">Ten tydzień</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body">
-                        <div class="stat-value" id="totalWeight">0</div>
-                        <div class="stat-label">Całkowity ciężar (kg)</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="row mb-4" id="actionsRow">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-lightning-fill"></i> Szybkie akcje</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex gap-2 flex-wrap">
-                            <button class="btn btn-primary" id="newTrainingBtn">
-                                <i class="bi bi-plus-circle"></i> Nowy trening
-                            </button>
-                            <button class="btn btn-outline-primary" id="quickAddBtn">
-                                <i class="bi bi-plus-lg"></i> Szybkie dodanie
-                            </button>
-                            <button class="btn btn-outline-primary" id="motivationBtn">
-                                <i class="bi bi-stars"></i> Motywacja
-                            </button>
-                            <button class="btn btn-outline-primary" id="exportBtn">
-                                <i class="bi bi-download"></i> Eksportuj dane
-                            </button>
-                            <button class="btn btn-outline-primary" id="importBtn">
-                                <i class="bi bi-upload"></i> Importuj dane
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Sessions -->
-        <div class="row" id="sessionsRow">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Ostatnie sesje</h5>
-                        <button class="btn btn-sm btn-outline-primary" id="newSessionBtn">
-                            <i class="bi bi-plus-circle"></i> Nowa sesja
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div id="sessionsContainer">
-                            <!-- Sessions will be dynamically loaded here -->
-                            <div class="text-center py-4">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Ładowanie...</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed top-6 left-1/2 -translate-x-1/2 bg-neon-green text-dark-bg px-6 py-3 rounded-full font-bold shadow-2xl z-50 animate-slide-in">
+        ✓ Seria zapisana!
     </div>
 
-    <button id="themeToggle" aria-label="Toggle theme">
-        <i class="bi bi-moon-stars-fill"></i>
-    </button>
+    <!-- Scripts -->
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registered', reg))
+                .catch(err => console.error('Service Worker error', err));
+        }
 
-    <button class="back-to-top" id="backToTopBtn">
-        <i class="bi bi-arrow-up"></i>
-    </button>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script src="./js/db.js"></script>
-    <script src="./js/theme.js"></script>
-    <script src="./js/notifications.js"></script>
-    <script src="./js/sessions.js"></script>
-    <script src="./js/exercises.js"></script>
-    <script src="./js/ui.js"></script>
-    <script src="./js/index-page.js"></script>
-
-        <!-- Request fullscreen on first user gesture (some browsers require user interaction) -->
-        <script>
-        (function(){
-            function requestFull() {
-                if (document.fullscreenElement) return;
-                const el = document.documentElement;
-                const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-                if (request) {
-                    request.call(el).catch(()=>{});
+        // Screen Wake Lock API
+        let wakeLock = null;
+        
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    document.getElementById('wakeLockIndicator').classList.remove('hidden');
+                    
+                    wakeLock.addEventListener('release', () => {
+                        document.getElementById('wakeLockIndicator').classList.add('hidden');
+                    });
                 }
+            } catch (err) {
+                console.error('Wake Lock error:', err);
             }
-            window.addEventListener('click', requestFull, { once: true });
-            window.addEventListener('touchstart', requestFull, { once: true });
-        })();
-        </script>
+        }
+        
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
 
-    <!-- Templates (hidden) -->
-    <template id="sessionCardTemplate">
-        <div class="card mb-3 session-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="session-name"></div>
-                        <div class="session-date"></div>
-                        <div class="session-stats"></div>
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            requestWakeLock();
+            loadExerciseHistory();
+            displayRecentSets();
+            
+            // Form submission
+            document.getElementById('trainingForm').addEventListener('submit', handleFormSubmit);
+            
+            // Listen for input changes to show suggestions
+            document.getElementById('exercise').addEventListener('input', checkSuggestion);
+            document.getElementById('reps').addEventListener('input', checkSuggestion);
+        });
+
+        // Load exercise history into datalist
+        function loadExerciseHistory() {
+            const exercises = getExerciseHistory();
+            const datalist = document.getElementById('exerciseHistory');
+            datalist.innerHTML = exercises.map(ex => `<option value="${ex}">`).join('');
+        }
+
+        // Display recent 5 sets
+        function displayRecentSets() {
+            const sets = loadSets().slice(0, 5);
+            const container = document.getElementById('recentSets');
+            
+            if (sets.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-dark-card border-2 border-dashed border-gray-800 rounded-2xl p-8 text-center">
+                        <p class="text-gray-600 font-medium">Brak historii. Dodaj pierwszą serię!</p>
                     </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = sets.map(set => `
+                <div class="bg-dark-card border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors">
                     <div>
-                        <button class="btn btn-sm btn-outline-danger delete-session">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <p class="font-bold text-lg">${set.exercise}</p>
+                        <p class="text-xs text-gray-500">${new Date(set.timestamp).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded-lg">
+                        <span class="text-neon-green font-black text-xl">${set.weight}</span>
+                        <span class="text-gray-600 text-sm font-bold">kg</span>
+                        <span class="text-gray-700 mx-1">×</span>
+                        <span class="text-white font-black text-xl">${set.reps}</span>
                     </div>
                 </div>
-            </div>
-        </div>
-    </template>
+            `).join('');
+        }
+
+        // Check if suggestion should be shown
+        function checkSuggestion() {
+            const exercise = document.getElementById('exercise').value.trim();
+            const reps = parseInt(document.getElementById('reps').value);
+            const suggestionBox = document.getElementById('suggestionBox');
+            const suggestionText = document.getElementById('suggestionText');
+            
+            if (exercise && reps >= 5) {
+                const lastSet = getLastSetForExercise(exercise);
+                if (lastSet && lastSet.reps >= 5) {
+                    const suggested = (lastSet.weight + 2.5).toFixed(1);
+                    suggestionText.textContent = `Sugestia: +2.5kg (${suggested}kg)`;
+                    suggestionBox.classList.remove('hidden');
+                } else {
+                    suggestionBox.classList.add('hidden');
+                }
+            } else {
+                suggestionBox.classList.add('hidden');
+            }
+        }
+
+        // Handle form submission
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const exercise = document.getElementById('exercise').value.trim();
+            const weight = parseFloat(document.getElementById('weight').value);
+            const reps = parseInt(document.getElementById('reps').value);
+            
+            if (!exercise || !weight || !reps) return;
+            
+            // Create new set
+            const newSet = {
+                id: crypto.randomUUID(),
+                exercise: exercise,
+                weight: weight,
+                reps: reps,
+                timestamp: Date.now()
+            };
+            
+            // Save to localStorage
+            const sets = loadSets();
+            sets.unshift(newSet);
+            saveSets(sets);
+            
+            // Show toast
+            const toast = document.getElementById('toast');
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+            
+            // Update UI
+            displayRecentSets();
+            loadExerciseHistory();
+            
+            // Reset form
+            e.target.reset();
+            document.getElementById('suggestionBox').classList.add('hidden');
+            document.getElementById('exercise').focus();
+        }
+    </script>
 </body>
 </html>
