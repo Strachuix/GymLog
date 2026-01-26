@@ -32,6 +32,16 @@
                 <img src="logo.png" alt="GymLog" class="h-10 w-auto">
             </div>
             <div class="flex items-center gap-2">
+                <label 
+                    for="importFile"
+                    class="p-2.5 text-gray-500 hover:text-neon-green transition-colors bg-dark-card rounded-lg cursor-pointer"
+                    title="Importuj z CSV"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-3-3m3 3l3-3m5 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 002 2z"/>
+                    </svg>
+                </label>
+                <input type="file" id="importFile" accept=".csv" class="hidden">
                 <button 
                     id="exportBtn"
                     class="p-2.5 text-gray-500 hover:text-neon-green transition-colors bg-dark-card rounded-lg"
@@ -187,7 +197,36 @@
             displayCharts();
             
             document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+            document.getElementById('importFile').addEventListener('change', handleImport);
         });
+        
+        // Handle CSV import
+        async function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                const result = await importFromCSV(file);
+                
+                if (result.imported > 0) {
+                    alert(`✅ Import zakończony!\n\n` +
+                          `Zaimportowano: ${result.imported}\n` +
+                          `Pominięto (duplikaty): ${result.skipped}`);
+                    
+                    // Odśwież widok
+                    displayTopExercises();
+                    displayPersonalRecords();
+                    displayCharts();
+                } else {
+                    alert('⚠️ Nie zaimportowano żadnych danych.\nWszystkie rekordy już istnieją.');
+                }
+            } catch (err) {
+                alert('❌ Błąd importu:\n' + err.message);
+            }
+            
+            // Reset input
+            event.target.value = '';
+        }
 
         // Display top 3 exercises
         function displayTopExercises() {
