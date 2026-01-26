@@ -9,9 +9,10 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "logo.png",
-      "sizes": "1024x352",
-      "type": "image/png"
+      "src": "logo-small.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "categories": ["health", "fitness", "lifestyle"],
@@ -20,14 +21,14 @@
       "name": "Dodaj serię",
       "short_name": "Nowa seria",
       "description": "Szybko dodaj nową serię",
-      "url": "/index.html",
-      "icons": [{ "src": "logo.png", "sizes": "1024x352" }]
+      "url": "/index.html",-small.png", "sizes": "512x512" }]
     },
     {
       "name": "Statystyki",
       "short_name": "Stats",
       "description": "Zobacz swoje statystyki",
       "url": "/stats.html",
+      "icons": [{ "src": "logo-small.png", "sizes": "512x51
       "icons": [{ "src": "logo.png", "sizes": "1024x352" }]
     }
   ]
