@@ -42,12 +42,12 @@
             <div class="flex items-center gap-3">
                 <img src="logo.png" alt="GymLog" class="h-10 w-auto">
             </div>
-            <div id="wakeLockIndicator" class="hidden flex items-center gap-2 bg-dark-card px-3 py-2 rounded-lg">
-                <div class="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
-                <svg class="w-4 h-4 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            <button id="wakeLockIndicator" onclick="toggleWakeLock()" class="flex items-center gap-2 bg-dark-card px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors" title="Kliknij aby włączyć/wyłączyć blokadę ekranu">
+                <div id="wakeLockDot" class="w-2 h-2 bg-gray-600 rounded-full"></div>
+                <svg id="wakeLockIcon" class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path id="wakeLockIconPath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
-            </div>
+            </button>
         </header>
 
         <!-- Training Form -->
@@ -142,8 +142,8 @@
     <nav class="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-gray-800 z-50">
         <div class="max-w-lg mx-auto flex">
             <a href="index.html" class="flex-1 flex flex-col items-center justify-center py-4 text-neon-green">
-                <svg class="w-7 h-7 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10M7 3h10M12 3v4M6 7h12v10H6V7zm1 3v4m10-4v4"/>
+                <svg class="w-7 h-7 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C10.9 2 10 2.9 10 4C10 5.1 10.9 6 12 6C13.1 6 14 5.1 14 4C14 2.9 13.1 2 12 2M16.5 9.5C15.67 9.5 15 10.17 15 11C15 11.83 15.67 12.5 16.5 12.5S18 11.83 18 11 17.33 9.5 16.5 9.5M7.5 9.5C6.67 9.5 6 10.17 6 11S6.67 12.5 7.5 12.5 9 11.83 9 11 8.33 9.5 7.5 9.5M14.97 11.5C14.87 10.87 14.5 10.29 14 9.83C13.5 9.38 12.78 9 12 9C11.22 9 10.5 9.38 10 9.83C9.5 10.29 9.13 10.87 9.03 11.5H7.5C7.5 11.5 6 11 6 13.5V17C6 17.5 6.45 18 7 18C7.55 18 8 17.5 8 17V14H9V21C9 21.5 9.45 22 10 22C10.55 22 11 21.5 11 21V15H13V21C13 21.5 13.45 22 14 22C14.55 22 15 21.5 15 21V14H16V17C16 17.5 16.45 18 17 18C17.55 18 18 17.5 18 17V13.5C18 11 16.5 11.5 16.5 11.5H14.97Z"/>
                 </svg>
                 <span class="text-xs font-bold">TRENING</span>
             </a>
@@ -173,31 +173,71 @@
 
         // Screen Wake Lock API
         let wakeLock = null;
+        let wakeLockEnabled = false;
         
         async function requestWakeLock() {
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    document.getElementById('wakeLockIndicator').classList.remove('hidden');
+                    wakeLockEnabled = true;
+                    updateWakeLockUI(true);
                     
                     wakeLock.addEventListener('release', () => {
-                        document.getElementById('wakeLockIndicator').classList.add('hidden');
+                        wakeLockEnabled = false;
+                        updateWakeLockUI(false);
                     });
                 }
             } catch (err) {
                 console.error('Wake Lock error:', err);
+                wakeLockEnabled = false;
+                updateWakeLockUI(false);
+            }
+        }
+        
+        async function releaseWakeLock() {
+            if (wakeLock !== null) {
+                await wakeLock.release();
+                wakeLock = null;
+                wakeLockEnabled = false;
+                updateWakeLockUI(false);
+            }
+        }
+        
+        async function toggleWakeLock() {
+            if (wakeLockEnabled) {
+                await releaseWakeLock();
+            } else {
+                await requestWakeLock();
+            }
+        }
+        
+        function updateWakeLockUI(active) {
+            const dot = document.getElementById('wakeLockDot');
+            const icon = document.getElementById('wakeLockIcon');
+            const iconPath = document.getElementById('wakeLockIconPath');
+            
+            if (active) {
+                // Aktywny - zielony z pulsowaniem
+                dot.className = 'w-2 h-2 bg-neon-green rounded-full animate-pulse';
+                icon.className = 'w-4 h-4 text-neon-green';
+                iconPath.setAttribute('d', 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z');
+            } else {
+                // Nieaktywny - szary, ikona otwartej kłódki
+                dot.className = 'w-2 h-2 bg-gray-600 rounded-full';
+                icon.className = 'w-4 h-4 text-gray-600';
+                iconPath.setAttribute('d', 'M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z');
             }
         }
         
         document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
+            if (wakeLockEnabled && document.visibilityState === 'visible') {
                 await requestWakeLock();
             }
         });
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
-            requestWakeLock();
+            updateWakeLockUI(false);  // Pokaż jako nieaktywny
             loadExerciseHistory();
             displayRecentSets();
             
