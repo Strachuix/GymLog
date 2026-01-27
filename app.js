@@ -1,6 +1,32 @@
 // Common LocalStorage key
 const STORAGE_KEY = 'gymlog_data';
 
+// Sanitize user input
+function sanitizeInput(input, maxLength = 40) {
+    if (!input || typeof input !== 'string') {
+        return '';
+    }
+    
+    // Trim whitespace
+    let sanitized = input.trim();
+    
+    // Remove HTML tags
+    sanitized = sanitized.replace(/<[^>]*>/g, '');
+    
+    // Remove URLs (http://, https://, www.)
+    sanitized = sanitized.replace(/(https?:\/\/|www\.)[^\s]+/gi, '');
+    
+    // Remove potentially dangerous characters
+    sanitized = sanitized.replace(/[<>"'`]/g, '');
+    
+    // Limit length
+    if (sanitized.length > maxLength) {
+        sanitized = sanitized.substring(0, maxLength);
+    }
+    
+    return sanitized;
+}
+
 // Load all sets from LocalStorage
 function loadSets() {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -184,6 +210,12 @@ function importFromJSON(file) {
                         return; // Skip invalid entries
                     }
                     
+                    // Sanitize exercise name
+                    const sanitizedExercise = sanitizeInput(set.exercise, 40);
+                    if (!sanitizedExercise) {
+                        return; // Skip if sanitization results in empty string
+                    }
+                    
                     // Generate ID if missing
                     if (!set.id) {
                         set.id = crypto.randomUUID();
@@ -202,7 +234,7 @@ function importFromJSON(file) {
                     
                     newSets.push({
                         id: set.id,
-                        exercise: set.exercise,
+                        exercise: sanitizedExercise,
                         weight: parseFloat(set.weight),
                         reps: parseInt(set.reps),
                         timestamp: set.timestamp

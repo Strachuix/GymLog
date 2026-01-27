@@ -94,6 +94,9 @@
                         type="text" 
                         id="editExercise" 
                         required
+                        maxlength="40"
+                        pattern="[^<>\"'`]*"
+                        title="Nazwa ćwiczenia (max 40 znaków)"
                         class="w-full bg-dark-bg border-2 border-gray-700 rounded-xl py-3 px-4 text-base font-semibold focus:border-neon-green focus:outline-none transition-all"
                     >
                 </div>
@@ -366,9 +369,15 @@
             e.preventDefault();
             
             const id = document.getElementById('editId').value;
-            const exercise = document.getElementById('editExercise').value.trim();
+            const exerciseRaw = document.getElementById('editExercise').value;
+            const exercise = sanitizeInput(exerciseRaw, 40);
             const weight = parseFloat(document.getElementById('editWeight').value);
             const reps = parseInt(document.getElementById('editReps').value);
+            
+            if (!exercise) {
+                showToast('❌ Nieprawidłowa nazwa ćwiczenia!');
+                return;
+            }
             
             if (updateSet(id, { exercise, weight, reps })) {
                 showToast('✓ Zapisano zmiany!');

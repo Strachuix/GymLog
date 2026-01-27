@@ -65,6 +65,9 @@
                         id="exercise" 
                         list="exerciseHistory"
                         required
+                        maxlength="40"
+                        pattern="[^<>\"'`]*"
+                        title="Nazwa ćwiczenia (max 40 znaków, bez linków i kodów)"
                         class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-5 text-xl font-semibold focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-600 text-gray-100"
                         placeholder="np. Wyciskanie sztangi"
                     >
@@ -467,11 +470,15 @@
         function handleFormSubmit(e) {
             e.preventDefault();
             
-            const exercise = document.getElementById('exercise').value.trim();
+            const exerciseRaw = document.getElementById('exercise').value;
+            const exercise = sanitizeInput(exerciseRaw, 40);
             const weight = parseFloat(document.getElementById('weight').value);
             const reps = parseInt(document.getElementById('reps').value);
             
-            if (!exercise || !weight || !reps) return;
+            if (!exercise || !weight || !reps) {
+                alert('Proszę wypełnić wszystkie pola poprawnie.');
+                return;
+            }
             
             // Check for new record BEFORE saving
             const record = checkNewRecord(exercise, weight);
