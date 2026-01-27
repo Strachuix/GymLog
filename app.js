@@ -103,6 +103,31 @@ function getPersonalRecords() {
     return records.sort((a, b) => b.weight - a.weight);
 }
 
+// Check if new set is a personal record
+function checkNewRecord(exercise, weight) {
+    const exerciseSets = loadSets().filter(s => s.exercise === exercise);
+    
+    // Must have at least 1 previous set (so this is 2nd or more)
+    if (exerciseSets.length < 1) {
+        return null;
+    }
+    
+    // Find previous max weight
+    const previousMax = Math.max(...exerciseSets.map(s => s.weight));
+    
+    // Check if new weight beats the record
+    if (weight > previousMax) {
+        return {
+            exercise: exercise,
+            newWeight: weight,
+            previousWeight: previousMax,
+            improvement: weight - previousMax
+        };
+    }
+    
+    return null;
+}
+
 // Export data to JSON
 function exportToJSON() {
     const sets = loadSets();

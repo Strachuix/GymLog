@@ -179,6 +179,65 @@
         </div>
     </div>
     
+    <!-- New Record Modal -->
+    <div id="recordModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-[60] flex items-center justify-center p-4">
+        <div class="bg-gradient-to-br from-neon-green to-emerald-600 rounded-3xl p-8 max-w-md w-full animate-slide-in shadow-2xl">
+            <div class="text-center">
+                <!-- Trophy Icon -->
+                <div class="mb-4 flex justify-center">
+                    <div class="bg-yellow-400 p-4 rounded-full animate-bounce">
+                        <svg class="w-12 h-12 text-yellow-900" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C11.5 2 11 2.19 10.59 2.59L2.59 10.59C1.8 11.37 1.8 12.63 2.59 13.41L10.59 21.41C11.37 22.2 12.63 22.2 13.41 21.41L21.41 13.41C22.2 12.63 22.2 11.37 21.41 10.59L13.41 2.59C13 2.19 12.5 2 12 2M12 4L20 12L12 20L4 12M12 7C9.24 7 7 9.24 7 12S9.24 17 12 17 17 14.76 17 12 14.76 7 12 7M12 9C13.66 9 15 10.34 15 12S13.66 15 12 15 9 13.66 9 12 10.34 9 12 9Z"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Title -->
+                <h2 class="text-3xl font-black text-dark-bg mb-2">🎉 NOWY REKORD!</h2>
+                <p class="text-dark-bg/80 font-bold text-lg mb-4" id="recordExercise">Wyciskanie sztangi</p>
+                
+                <!-- Stats -->
+                <div class="bg-dark-bg/20 rounded-2xl p-4 mb-6">
+                    <div class="flex items-center justify-center gap-4 text-dark-bg">
+                        <div class="text-center">
+                            <p class="text-xs font-bold opacity-80 uppercase">Poprzedni</p>
+                            <p class="text-2xl font-black" id="recordPrevious">80kg</p>
+                        </div>
+                        <svg class="w-6 h-6 text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                        <div class="text-center">
+                            <p class="text-xs font-bold opacity-80 uppercase">Nowy</p>
+                            <p class="text-3xl font-black" id="recordNew">85kg</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 bg-yellow-400 text-yellow-900 rounded-full px-4 py-2 inline-block">
+                        <p class="text-sm font-black">+<span id="recordImprovement">5</span>kg</p>
+                    </div>
+                </div>
+                
+                <!-- Buttons -->
+                <div class="space-y-3">
+                    <button 
+                        onclick="shareRecord()"
+                        class="w-full bg-dark-bg hover:bg-gray-900 text-neon-green font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                        </svg>
+                        UDOSTĘPNIJ REKORD
+                    </button>
+                    <button 
+                        onclick="closeRecordModal()"
+                        class="w-full bg-white/20 hover:bg-white/30 text-dark-bg font-bold py-3 rounded-2xl transition-all"
+                    >
+                        Zamknij
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Install Button -->
     <button 
         id="installButton"
@@ -414,6 +473,9 @@
             
             if (!exercise || !weight || !reps) return;
             
+            // Check for new record BEFORE saving
+            const record = checkNewRecord(exercise, weight);
+            
             // Create new set
             const newSet = {
                 id: crypto.randomUUID(),
@@ -433,6 +495,11 @@
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 2000);
             
+            // Show record modal if new record
+            if (record) {
+                setTimeout(() => showRecordModal(record), 2200);
+            }
+            
             // Update UI
             displayRecentSets();
             loadExerciseHistory();
@@ -441,6 +508,52 @@
             e.target.reset();
             document.getElementById('suggestionBox').classList.add('hidden');
             document.getElementById('exercise').focus();
+        }
+        
+        // Show record modal
+        let currentRecord = null;
+        
+        function showRecordModal(record) {
+            currentRecord = record;
+            
+            document.getElementById('recordExercise').textContent = record.exercise;
+            document.getElementById('recordPrevious').textContent = record.previousWeight + 'kg';
+            document.getElementById('recordNew').textContent = record.newWeight + 'kg';
+            document.getElementById('recordImprovement').textContent = record.improvement.toFixed(1);
+            
+            document.getElementById('recordModal').classList.remove('hidden');
+        }
+        
+        function closeRecordModal() {
+            document.getElementById('recordModal').classList.add('hidden');
+            currentRecord = null;
+        }
+        
+        function shareRecord() {
+            if (!currentRecord) return;
+            
+            const text = `🏋️‍♂️ Nowy rekord w GymLog!\n🏆 ${currentRecord.exercise}\n💪 ${currentRecord.previousWeight}kg → ${currentRecord.newWeight}kg (+${currentRecord.improvement.toFixed(1)}kg)`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Nowy Rekord - GymLog',
+                    text: text
+                }).then(() => {
+                    closeRecordModal();
+                }).catch(err => console.log('Share cancelled', err));
+            } else {
+                // Fallback - copy to clipboard
+                navigator.clipboard.writeText(text).then(() => {
+                    const toast = document.getElementById('toast');
+                    toast.textContent = '✓ Skopiowano do schowka!';
+                    toast.classList.remove('hidden');
+                    setTimeout(() => {
+                        toast.classList.add('hidden');
+                        toast.textContent = '✓ Seria zapisana!';
+                    }, 2000);
+                    closeRecordModal();
+                });
+            }
         }
     </script>
 </body>
