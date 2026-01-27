@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#121212">
-    <link rel="icon" type="image/png" href="logo-small.png">
-    <link rel="apple-touch-icon" href="logo-small.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/logo-small-64.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/logo-small-256.png">
     <link rel="manifest" href="manifest.json">
     <title>GymLog - Statystyki</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,7 +29,7 @@
         <!-- Header -->
         <header class="flex items-center justify-between mb-8 pt-4">
             <div class="flex items-center gap-3">
-                <img src="logo.png" alt="GymLog" class="h-10 w-auto">
+                <img src="assets/logo.png" alt="GymLog" class="h-10 w-auto">
             </div>
             <div class="flex items-center gap-2">
                 <label 
@@ -101,11 +101,11 @@
     <nav class="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-gray-800 z-50">
         <div class="max-w-lg mx-auto flex">
             <a href="index.html" class="flex-1 flex flex-col items-center justify-center py-4 text-gray-500 hover:text-gray-400 transition-colors">
-                <img src="dumbbell-solid-full.svg" alt="Trening" class="w-7 h-7 mb-1" style="filter: brightness(0) saturate(100%) invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);">
+                <img src="assets/dumbbell-solid-full.svg" alt="Trening" class="w-7 h-7 mb-1" style="filter: brightness(0) saturate(100%) invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);">
                 <span class="text-xs font-bold">TRENING</span>
             </a>
             <a href="stats.html" class="flex-1 flex flex-col items-center justify-center py-4 text-neon-green">
-                <img src="chart-simple-solid-full.svg" alt="Statystyki" class="w-7 h-7 mb-1" style="filter: brightness(0) saturate(100%) invert(73%) sepia(40%) saturate(1182%) hue-rotate(106deg) brightness(96%) contrast(85%);">
+                <img src="assets/chart-simple-solid-full.svg" alt="Statystyki" class="w-7 h-7 mb-1" style="filter: brightness(0) saturate(100%) invert(73%) sepia(40%) saturate(1182%) hue-rotate(106deg) brightness(96%) contrast(85%);">
                 <span class="text-xs font-bold">STATYSTYKI</span>
             </a>
             <a href="history.html" class="flex-1 flex flex-col items-center justify-center py-4 text-gray-500 hover:text-gray-400 transition-colors">
@@ -129,9 +129,36 @@
             </div>
         </div>
     </div>
+    
+    <!-- Install Button -->
+    <button 
+        id="installButton"
+        onclick="handleInstallClick()"
+        class="fixed bottom-24 right-4 bg-neon-green text-dark-bg px-5 py-3 rounded-2xl font-bold shadow-2xl z-50 transition-all duration-300"
+        style="display: none; opacity: 0;"
+    >
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <div class="text-left">
+                <p class="text-sm leading-tight">Zainstaluj GymLog</p>
+                <p class="text-xs opacity-75 leading-tight">na telefonie</p>
+            </div>
+            <div 
+                onclick="event.stopPropagation(); closeInstallPrompt();"
+                class="ml-2 p-1 hover:bg-dark-bg hover:bg-opacity-20 rounded-lg transition-colors cursor-pointer"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+        </div>
+    </button>
 
     <!-- Scripts -->
     <script src="app.js"></script>
+    <script src="install.js"></script>
     <script>
         // Register Service Worker with update checking
         if ('serviceWorker' in navigator) {

@@ -1,4 +1,4 @@
-const VERSION = '1.0.4';
+const VERSION = '1.0.7';
 const CACHE_NAME = `gymlog-v${VERSION}`;
 const urlsToCache = [
   '/',
@@ -6,7 +6,16 @@ const urlsToCache = [
   '/stats.html',
   '/history.html',
   '/app.js',
+  '/install.js',
   '/manifest.json',
+  '/assets/logo.png',
+  '/assets/logo-small-64.png',
+  '/assets/logo-small-128.png',
+  '/assets/logo-small-192.png',
+  '/assets/logo-small-256.png',
+  '/assets/logo-small-512.png',
+  '/assets/dumbbell-solid-full.svg',
+  '/assets/chart-simple-solid-full.svg',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
@@ -24,7 +33,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Message event - obs\u0142uga SKIP_WAITING
+// Message event - obsługa SKIP_WAITING
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();

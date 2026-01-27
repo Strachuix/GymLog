@@ -9,7 +9,28 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "logo-small.png",
+      "src": "assets/logo-small-64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/logo-small-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/logo-small-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/logo-small-256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/logo-small-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -22,14 +43,14 @@
       "short_name": "Nowa seria",
       "description": "Szybko dodaj nową serię",
       "url": "/index.html",
-      "icons": [{ "src": "logo-small.png", "sizes": "512x512" }]
+      "icons": [{ "src": "assets/logo-small-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Statystyki",
       "short_name": "Stats",
       "description": "Zobacz swoje statystyki",
       "url": "/stats.html",
-      "icons": [{ "src": "logo-small.png", "sizes": "512x512" }]
+      "icons": [{ "src": "assets/logo-small-192.png", "sizes": "192x192" }]
     }
   ]
 }

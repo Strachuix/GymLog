@@ -368,7 +368,7 @@ if ('serviceWorker' in navigator) {
 {
   "icons": [
     {
-      "src": "logo.png",
+      "src": "assets/logo-small-512.png",
       "sizes": "1024x352",
       "type": "image/png"
     }

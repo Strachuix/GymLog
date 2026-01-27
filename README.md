@@ -2,7 +2,7 @@
 
 **GymLog** to nowoczesna aplikacja Progressive Web App (PWA) do śledzenia postępów treningowych w siłowni. Śledź swoje serie, analizuj statystyki i osiągaj nowe rekordy!
 
-![GymLog Logo](logo.png)
+![GymLog Logo](assets/logo.png)
 
 ## ✨ Funkcje
 
@@ -102,7 +102,11 @@ gymlog/
 ├── app.js              # Wspólna logika aplikacji
 ├── sw.js               # Service Worker (offline support)
 ├── manifest.json       # Manifest PWA
-├── logo.png            # Logo aplikacji (1024x352px)
+├── assets/             # Folder z grafikami
+│   ├── logo.png            # Logo aplikacji (1024x352px)
+│   ├── logo-small-*.png    # Ikony PWA (64, 128, 192, 256, 512px)
+│   ├── dumbbell-solid-full.svg
+│   └── chart-simple-solid-full.svg
 └── README.md           # Ten plik
 ```
 
