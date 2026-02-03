@@ -55,6 +55,37 @@
         <!-- Training Form -->
         <main>
             <form id="trainingForm" class="space-y-5">
+                <!-- Exercise Type Selector -->
+                <div>
+                    <label class="text-sm font-bold text-gray-400 uppercase tracking-wide mb-2 block">Typ ćwiczenia</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button 
+                            type="button" 
+                            onclick="selectExerciseType('weighted')"
+                            id="typeWeighted"
+                            class="exercise-type-btn py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 border-neon-green bg-neon-green/20 text-neon-green"
+                        >
+                            🏋️ Ciężar
+                        </button>
+                        <button 
+                            type="button"
+                            onclick="selectExerciseType('bodyweight')"
+                            id="typeBodyweight"
+                            class="exercise-type-btn py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 border-gray-700 bg-dark-card text-gray-400"
+                        >
+                            💪 Masy
+                        </button>
+                        <button 
+                            type="button"
+                            onclick="selectExerciseType('timed')"
+                            id="typeTimed"
+                            class="exercise-type-btn py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 border-gray-700 bg-dark-card text-gray-400"
+                        >
+                            ⏱️ Czas
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Exercise Name -->
                 <div>
                     <div class="flex items-center justify-between mb-2">
@@ -86,50 +117,137 @@
                     <datalist id="exerciseHistory"></datalist>
                 </div>
 
-                <!-- Weight and Reps Grid -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="weight" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
-                            Ciężar (kg)
-                        </label>
-                        <input 
-                            type="number" 
-                            id="weight" 
-                            step="0.5"
-                            required
-                            inputmode="decimal"
-                            class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-neon-green"
-                            placeholder="0"
-                        >
+                <!-- Fields for WEIGHTED exercises -->
+                <div id="weightedFields" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="weight" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                                Ciężar (kg)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="weight" 
+                                step="0.5"
+                                inputmode="decimal"
+                                class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-neon-green"
+                                placeholder="0"
+                            >
+                        </div>
+                        <div>
+                            <label for="reps" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                                Powtórzenia
+                            </label>
+                            <input 
+                                type="number" 
+                                id="reps" 
+                                min="1"
+                                inputmode="numeric"
+                                class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-gray-100"
+                                placeholder="0"
+                            >
+                        </div>
                     </div>
-                    <div>
-                        <label for="reps" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
-                            Powtórzenia
-                        </label>
-                        <input 
-                            type="number" 
-                            id="reps" 
-                            min="1"
-                            required
-                            inputmode="numeric"
-                            class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-gray-100"
-                            placeholder="0"
-                        >
+
+                    <!-- Suggestion Box -->
+                    <div id="suggestionBox" class="hidden bg-neon-green/10 border-2 border-neon-green/30 rounded-2xl p-4 animate-slide-in">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-neon-green p-2 rounded-lg">
+                                <svg class="w-5 h-5 text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-neon-green uppercase tracking-wider">Progresja!</p>
+                                <p id="suggestionText" class="text-white font-semibold text-sm"></p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Suggestion Box -->
-                <div id="suggestionBox" class="hidden bg-neon-green/10 border-2 border-neon-green/30 rounded-2xl p-4 animate-slide-in">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-neon-green p-2 rounded-lg">
-                            <svg class="w-5 h-5 text-dark-bg" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                            </svg>
+                <!-- Fields for BODYWEIGHT exercises -->
+                <div id="bodyweightFields" class="space-y-4 hidden">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="bwReps" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                                Powtórzenia
+                            </label>
+                            <input 
+                                type="number" 
+                                id="bwReps" 
+                                min="1"
+                                inputmode="numeric"
+                                class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-gray-100"
+                                placeholder="0"
+                            >
                         </div>
                         <div>
-                            <p class="text-xs font-bold text-neon-green uppercase tracking-wider">Progresja!</p>
-                            <p id="suggestionText" class="text-white font-semibold text-sm"></p>
+                            <label for="addedWeight" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                                Dodany ciężar (kg)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="addedWeight" 
+                                step="0.5"
+                                value="0"
+                                inputmode="decimal"
+                                class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-neon-green"
+                                placeholder="0"
+                            >
                         </div>
+                    </div>
+                    <div class="bg-gray-900 rounded-xl p-3 text-sm text-gray-400">
+                        <p class="flex items-center gap-2">
+                            <span class="text-gray-500">ℹ️</span>
+                            <span>Twoja masa ciała: <span id="bodyWeightDisplay" class="text-white font-bold">--</span> kg</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Fields for TIMED exercises -->
+                <div id="timedFields" class="space-y-4 hidden">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="duration" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                                Czas (min)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="duration" 
+                                step="0.1"
+                                min="0"
+                                inputmode="decimal"
+                                class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-blue-400"
+                                placeholder="0"
+                            >
+                        </div>
+                        <div>
+                            <label for="distance" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                                Dystans (km)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="distance" 
+                                step="0.1"
+                                min="0"
+                                inputmode="decimal"
+                                class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-2xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-gray-100"
+                                placeholder="0"
+                            >
+                        </div>
+                    </div>
+                    <div>
+                        <label for="elevation" class="block text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">
+                            Wzniesienie (m)
+                        </label>
+                        <input 
+                            type="number" 
+                            id="elevation" 
+                            step="1"
+                            min="0"
+                            inputmode="numeric"
+                            class="w-full bg-dark-card border-2 border-gray-700 rounded-2xl py-4 px-4 text-xl font-black focus:border-neon-green focus:outline-none transition-all placeholder:text-gray-700 text-center text-gray-100"
+                            placeholder="0"
+                        >
                     </div>
                 </div>
 
@@ -175,9 +293,7 @@
                 <span class="text-xs font-bold">STATYSTYKI</span>
             </a>
             <a href="profile.html" class="flex-1 flex flex-col items-center justify-center py-4 text-gray-500 hover:text-gray-400 transition-colors">
-                <svg class="w-7 h-7 mb-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
+                <img src="assets/user-solid-full.svg" alt="Profil" class="w-7 h-7 mb-1" style="filter: brightness(0) saturate(100%) invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);">
                 <span class="text-xs font-bold">PROFIL</span>
             </a>
         </div>
@@ -414,16 +530,43 @@
             }
         });
 
+        // Exercise type state
+        let selectedType = 'weighted';
+
+        // Select exercise type
+        function selectExerciseType(type) {
+            selectedType = type;
+            
+            // Update button styles
+            document.querySelectorAll('.exercise-type-btn').forEach(btn => {
+                btn.className = 'exercise-type-btn py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 border-gray-700 bg-dark-card text-gray-400';
+            });
+            document.getElementById(`type${type.charAt(0).toUpperCase() + type.slice(1)}`).className = 'exercise-type-btn py-3 px-4 rounded-xl font-bold text-sm transition-all border-2 border-neon-green bg-neon-green/20 text-neon-green';
+            
+            // Show/hide relevant fields
+            document.getElementById('weightedFields').classList.toggle('hidden', type !== 'weighted');
+            document.getElementById('bodyweightFields').classList.toggle('hidden', type !== 'bodyweight');
+            document.getElementById('timedFields').classList.toggle('hidden', type !== 'timed');
+            
+            // Load bodyweight from profile if bodyweight type selected
+            if (type === 'bodyweight') {
+                const profile = JSON.parse(localStorage.getItem('gymlog_profile') || '{}');
+                const bodyWeight = profile.weight || '--';
+                document.getElementById('bodyWeightDisplay').textContent = bodyWeight;
+            }
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
-            updateWakeLockUI(false);  // Pokaż jako nieaktywny
+            updateWakeLockUI(false);
             loadExerciseHistory();
             displayRecentSets();
+            selectExerciseType('weighted'); // Set default
             
             // Form submission
             document.getElementById('trainingForm').addEventListener('submit', handleFormSubmit);
             
-            // Listen for input changes to show suggestions
+            // Listen for input changes to show suggestions (weighted only)
             document.getElementById('exercise').addEventListener('input', checkSuggestion);
             document.getElementById('reps').addEventListener('input', checkSuggestion);
         });
@@ -438,10 +581,22 @@
             
             const lastSet = sets[0];
             document.getElementById('exercise').value = lastSet.exercise;
-            document.getElementById('weight').value = lastSet.weight;
-            document.getElementById('reps').value = lastSet.reps;
             
-            // Focus on exercise field for easy editing
+            // Switch to correct type and fill fields
+            selectExerciseType(lastSet.type);
+            
+            if (lastSet.type === 'weighted') {
+                document.getElementById('weight').value = lastSet.weight;
+                document.getElementById('reps').value = lastSet.reps;
+            } else if (lastSet.type === 'bodyweight') {
+                document.getElementById('bwReps').value = lastSet.reps;
+                document.getElementById('addedWeight').value = lastSet.addedWeight || 0;
+            } else if (lastSet.type === 'timed') {
+                document.getElementById('duration').value = lastSet.duration;
+                document.getElementById('distance').value = lastSet.distance || '';
+                document.getElementById('elevation').value = lastSet.elevation || '';
+            }
+            
             document.getElementById('exercise').focus();
             document.getElementById('exercise').select();
         }
@@ -467,24 +622,66 @@
                 return;
             }
             
-            container.innerHTML = sets.map(set => `
-                <div class="bg-dark-card border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors">
-                    <div>
-                        <p class="font-bold text-lg">${set.exercise}</p>
-                        <p class="text-xs text-gray-500">${new Date(set.timestamp).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</p>
+            const typeIcons = {
+                weighted: '🏋️',
+                bodyweight: '💪',
+                timed: '⏱️'
+            };
+            
+            container.innerHTML = sets.map(set => {
+                let dataDisplay = '';
+                
+                if (set.type === 'weighted') {
+                    dataDisplay = `
+                        <div class="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded-lg">
+                            <span class="text-neon-green font-black text-xl">${set.weight}</span>
+                            <span class="text-gray-600 text-sm font-bold">kg</span>
+                            <span class="text-gray-700 mx-1">×</span>
+                            <span class="text-white font-black text-xl">${set.reps}</span>
+                        </div>
+                    `;
+                } else if (set.type === 'bodyweight') {
+                    const totalWeight = (set.bodyWeight || 0) + (set.addedWeight || 0);
+                    dataDisplay = `
+                        <div class="bg-gray-900 px-3 py-2 rounded-lg text-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-white font-black text-xl">${set.reps}</span>
+                                <span class="text-gray-600 text-sm font-bold">reps</span>
+                            </div>
+                            ${set.addedWeight ? `<div class="text-xs text-gray-500 mt-1">+${set.addedWeight}kg</div>` : ''}
+                        </div>
+                    `;
+                } else if (set.type === 'timed') {
+                    dataDisplay = `
+                        <div class="bg-gray-900 px-3 py-2 rounded-lg text-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-blue-400 font-black text-xl">${set.duration}</span>
+                                <span class="text-gray-600 text-sm font-bold">min</span>
+                            </div>
+                            ${set.distance ? `<div class="text-xs text-gray-400 mt-1">${set.distance}km</div>` : ''}
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="bg-dark-card border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">${typeIcons[set.type] || '🏋️'}</span>
+                                <p class="font-bold text-lg">${set.exercise}</p>
+                            </div>
+                            <p class="text-xs text-gray-500">${new Date(set.timestamp).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                        ${dataDisplay}
                     </div>
-                    <div class="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded-lg">
-                        <span class="text-neon-green font-black text-xl">${set.weight}</span>
-                        <span class="text-gray-600 text-sm font-bold">kg</span>
-                        <span class="text-gray-700 mx-1">×</span>
-                        <span class="text-white font-black text-xl">${set.reps}</span>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        // Check if suggestion should be shown
+        // Check if suggestion should be shown (weighted only)
         function checkSuggestion() {
+            if (selectedType !== 'weighted') return;
+            
             const exercise = document.getElementById('exercise').value.trim();
             const reps = parseInt(document.getElementById('reps').value);
             const suggestionBox = document.getElementById('suggestionBox');
@@ -492,7 +689,7 @@
             
             if (exercise && reps >= 5) {
                 const lastSet = getLastSetForExercise(exercise);
-                if (lastSet && lastSet.reps >= 5) {
+                if (lastSet && lastSet.type === 'weighted' && lastSet.reps >= 5) {
                     const suggested = (lastSet.weight + 2.5).toFixed(1);
                     suggestionText.textContent = `Sugestia: +2.5kg (${suggested}kg)`;
                     suggestionBox.classList.remove('hidden');
@@ -510,25 +707,67 @@
             
             const exerciseRaw = document.getElementById('exercise').value;
             const exercise = sanitizeInput(exerciseRaw, 40);
-            const weight = parseFloat(document.getElementById('weight').value);
-            const reps = parseInt(document.getElementById('reps').value);
             
-            if (!exercise || !weight || !reps) {
-                alert('Proszę wypełnić wszystkie pola poprawnie.');
+            if (!exercise) {
+                alert('Proszę podać nazwę ćwiczenia.');
                 return;
             }
             
-            // Check for new record BEFORE saving
-            const record = checkNewRecord(exercise, weight);
-            
-            // Create new set
-            const newSet = {
+            let newSet = {
                 id: crypto.randomUUID(),
                 exercise: exercise,
-                weight: weight,
-                reps: reps,
+                type: selectedType,
                 timestamp: Date.now()
             };
+            
+            // Add type-specific fields
+            if (selectedType === 'weighted') {
+                const weight = parseFloat(document.getElementById('weight').value);
+                const reps = parseInt(document.getElementById('reps').value);
+                
+                if (!weight || !reps) {
+                    alert('Proszę wypełnić ciężar i powtórzenia.');
+                    return;
+                }
+                
+                newSet.weight = weight;
+                newSet.reps = reps;
+                
+                // Check for new record (weighted only)
+                const record = checkNewRecord(exercise, weight);
+                if (record) {
+                    setTimeout(() => showRecordModal(record), 2200);
+                }
+                
+            } else if (selectedType === 'bodyweight') {
+                const reps = parseInt(document.getElementById('bwReps').value);
+                const addedWeight = parseFloat(document.getElementById('addedWeight').value) || 0;
+                const profile = JSON.parse(localStorage.getItem('gymlog_profile') || '{}');
+                const bodyWeight = profile.weight || 0;
+                
+                if (!reps) {
+                    alert('Proszę wypełnić powtórzenia.');
+                    return;
+                }
+                
+                newSet.reps = reps;
+                newSet.addedWeight = addedWeight;
+                newSet.bodyWeight = bodyWeight; // Save for user info
+                
+            } else if (selectedType === 'timed') {
+                const duration = parseFloat(document.getElementById('duration').value);
+                const distance = parseFloat(document.getElementById('distance').value) || null;
+                const elevation = parseFloat(document.getElementById('elevation').value) || null;
+                
+                if (!duration) {
+                    alert('Proszę wypełnić czas.');
+                    return;
+                }
+                
+                newSet.duration = duration;
+                if (distance) newSet.distance = distance;
+                if (elevation) newSet.elevation = elevation;
+            }
             
             // Save to localStorage
             const sets = loadSets();
@@ -540,17 +779,15 @@
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 2000);
             
-            // Show record modal if new record
-            if (record) {
-                setTimeout(() => showRecordModal(record), 2200);
-            }
-            
             // Update UI
             displayRecentSets();
             loadExerciseHistory();
             
-            // Reset form
+            // Reset form but keep type selected
             e.target.reset();
+            if (selectedType === 'bodyweight') {
+                document.getElementById('addedWeight').value = '0';
+            }
             document.getElementById('suggestionBox').classList.add('hidden');
             document.getElementById('exercise').focus();
         }

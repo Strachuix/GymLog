@@ -27,10 +27,30 @@ function sanitizeInput(input, maxLength = 40) {
     return sanitized;
 }
 
-// Load all sets from LocalStorage
+// Load all sets from LocalStorage with migration
 function loadSets() {
     const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    
+    const sets = JSON.parse(data);
+    
+    // Migrate old data: add type: 'weighted' if missing
+    let needsMigration = false;
+    const migrated = sets.map(set => {
+        if (!set.type) {
+            needsMigration = true;
+            return { ...set, type: 'weighted' };
+        }
+        return set;
+    });
+    
+    // Save migrated data
+    if (needsMigration) {
+        saveSets(migrated);
+        console.log('Data migrated: added type field to', sets.length, 'entries');
+    }
+    
+    return migrated;
 }
 
 // Save sets to LocalStorage

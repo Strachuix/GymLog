@@ -455,8 +455,15 @@
             
             noDataBox.classList.add('hidden');
             
-            // Populate exercise select
-            const exercises = [...new Set(sets.map(s => s.exercise))].sort();
+            // Populate exercise select - ONLY WEIGHTED exercises
+            const weightedSets = sets.filter(s => s.type === 'weighted');
+            const exercises = [...new Set(weightedSets.map(s => s.exercise))].sort();
+            
+            if (exercises.length === 0) {
+                noDataBox.classList.remove('hidden');
+                return;
+            }
+            
             exercises.forEach(exercise => {
                 const option = document.createElement('option');
                 option.value = exercise;
@@ -838,10 +845,25 @@
         
         function displayChart(exerciseName, sets) {
             const container = document.getElementById('charts');
+            const sortedSets = sets.slice().reverse(); // Oldest to newest
+            
+            // Determine exercise type (all sets of same exercise should have same type)
+            const exerciseType = sortedSets[0].type || 'weighted';
+            
+            // Generate charts based on type
+            if (exerciseType === 'weighted') {
+                displayWeightedChart(exerciseName, sortedSets, container);
+            } else if (exerciseType === 'bodyweight') {
+                displayBodyweightChart(exerciseName, sortedSets, container);
+            } else if (exerciseType === 'timed') {
+                displayTimedChart(exerciseName, sortedSets, container);
+            }
+        }
+        
+        function displayWeightedChart(exerciseName, sortedSets, container) {
             const chartId = `chart-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
             const volumeChartId = `volume-chart-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
             const oneRmChartId = `onerm-chart-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
-            const sortedSets = sets.slice().reverse(); // Oldest to newest
             
             // Get selected formula from profile or use default (Epley)
             const profile = JSON.parse(localStorage.getItem('gymlog_profile')) || {};
@@ -876,7 +898,10 @@
             
             container.innerHTML = `
                 <div class="bg-dark-card border border-gray-800 rounded-xl p-5 space-y-6">
-                    <h3 class="font-bold text-lg text-neon-green">${exerciseName}</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">🏋️</span>
+                        <h3 class="font-bold text-lg text-neon-green">${exerciseName}</h3>
+                    </div>
                     
                     <!-- Weight Chart -->
                     <div>
@@ -905,15 +930,15 @@
                     <div class="mt-4 grid grid-cols-3 gap-3 text-center">
                         <div class="bg-gray-900 rounded-lg p-3">
                             <p class="text-xs text-gray-500 mb-1">Serie</p>
-                            <p class="text-lg font-bold text-gray-300">${sets.length}</p>
+                            <p class="text-lg font-bold text-gray-300">${sortedSets.length}</p>
                         </div>
                         <div class="bg-gray-900 rounded-lg p-3">
                             <p class="text-xs text-gray-500 mb-1">Max ciężar</p>
-                            <p class="text-lg font-bold text-neon-green">${Math.max(...sets.map(s => s.weight))} kg</p>
+                            <p class="text-lg font-bold text-neon-green">${Math.max(...sortedSets.map(s => s.weight))} kg</p>
                         </div>
                         <div class="bg-gray-900 rounded-lg p-3">
                             <p class="text-xs text-gray-500 mb-1">Całk. objętość</p>
-                            <p class="text-lg font-bold text-blue-400">${sets.reduce((sum, s) => sum + (s.weight * s.reps), 0).toFixed(0)}</p>
+                            <p class="text-lg font-bold text-blue-400">${sortedSets.reduce((sum, s) => sum + (s.weight * s.reps), 0).toFixed(0)}</p>
                         </div>
                     </div>
                 </div>
@@ -1144,6 +1169,337 @@
                         }
                     }
                 });
+            }
+        }
+        
+        function displayBodyweightChart(exerciseName, sortedSets, container) {
+            const chartId = `chart-bw-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
+            
+            container.innerHTML = `
+                <div class="bg-dark-card border border-gray-800 rounded-xl p-5 space-y-6">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">💪</span>
+                        <h3 class="font-bold text-lg text-neon-green">${exerciseName}</h3>
+                    </div>
+                    
+                    <!-- Reps Chart -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Powtórzenia w serii</h4>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <canvas id="${chartId}"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Serie</p>
+                            <p class="text-lg font-bold text-gray-300">${sortedSets.length}</p>
+                        </div>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Max powtórzeń</p>
+                            <p class="text-lg font-bold text-neon-green">${Math.max(...sortedSets.map(s => s.reps))}</p>
+                        </div>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Całk. powtórzenia</p>
+                            <p class="text-lg font-bold text-blue-400">${sortedSets.reduce((sum, s) => sum + s.reps, 0)}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Create reps chart
+            const ctx = document.getElementById(chartId);
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedSets.map((_, i) => `#${i + 1}`),
+                        datasets: [
+                            {
+                                label: 'Powtórzenia',
+                                data: sortedSets.map(s => s.reps),
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                titleColor: '#10b981',
+                                bodyColor: '#fff',
+                                borderColor: '#10b981',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    title: (items) => {
+                                        const index = items[0].dataIndex;
+                                        const date = new Date(sortedSets[index].timestamp);
+                                        return date.toLocaleString('pl-PL', { 
+                                            day: '2-digit', 
+                                            month: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                    },
+                                    label: (context) => {
+                                        const set = sortedSets[context.dataIndex];
+                                        let label = `${set.reps} powtórzeń`;
+                                        if (set.addedWeight && set.addedWeight > 0) {
+                                            label += ` (+${set.addedWeight}kg)`;
+                                        }
+                                        if (set.bodyWeight) {
+                                            label += ` | Masa ciała: ${set.bodyWeight}kg`;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                ticks: { color: '#6b7280', font: { size: 10 } }
+                            },
+                            y: {
+                                grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                ticks: { 
+                                    color: '#10b981', 
+                                    font: { size: 11, weight: 'bold' },
+                                    callback: (value) => value
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                });
+            }
+        }
+        
+        function displayTimedChart(exerciseName, sortedSets, container) {
+            const durationChartId = `chart-duration-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
+            const distanceChartId = `chart-distance-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
+            
+            const hasDistance = sortedSets.some(s => s.distance);
+            
+            container.innerHTML = `
+                <div class="bg-dark-card border border-gray-800 rounded-xl p-5 space-y-6">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">⏱️</span>
+                        <h3 class="font-bold text-lg text-neon-green">${exerciseName}</h3>
+                    </div>
+                    
+                    <!-- Duration Chart -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Czas (minuty)</h4>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <canvas id="${durationChartId}"></canvas>
+                        </div>
+                    </div>
+                    
+                    ${hasDistance ? `
+                    <!-- Distance Chart -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Dystans (km)</h4>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <canvas id="${distanceChartId}"></canvas>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Serie</p>
+                            <p class="text-lg font-bold text-gray-300">${sortedSets.length}</p>
+                        </div>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Najdł. czas</p>
+                            <p class="text-lg font-bold text-blue-400">${Math.max(...sortedSets.map(s => s.duration))} min</p>
+                        </div>
+                        ${hasDistance ? `
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Całk. dystans</p>
+                            <p class="text-lg font-bold text-neon-green">${sortedSets.reduce((sum, s) => sum + (s.distance || 0), 0).toFixed(1)} km</p>
+                        </div>
+                        ` : `
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 mb-1">Całk. czas</p>
+                            <p class="text-lg font-bold text-neon-green">${sortedSets.reduce((sum, s) => sum + s.duration, 0).toFixed(1)} min</p>
+                        </div>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            // Create duration chart
+            const durationCtx = document.getElementById(durationChartId);
+            if (durationCtx) {
+                new Chart(durationCtx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedSets.map((_, i) => `#${i + 1}`),
+                        datasets: [
+                            {
+                                label: 'Czas (min)',
+                                data: sortedSets.map(s => s.duration),
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                titleColor: '#3b82f6',
+                                bodyColor: '#fff',
+                                borderColor: '#3b82f6',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    title: (items) => {
+                                        const index = items[0].dataIndex;
+                                        const date = new Date(sortedSets[index].timestamp);
+                                        return date.toLocaleString('pl-PL', { 
+                                            day: '2-digit', 
+                                            month: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                    },
+                                    label: (context) => {
+                                        const set = sortedSets[context.dataIndex];
+                                        let label = `Czas: ${set.duration} min`;
+                                        if (set.distance) label += ` | Dystans: ${set.distance} km`;
+                                        if (set.elevation) label += ` | Wzniesienie: ${set.elevation} m`;
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                ticks: { color: '#6b7280', font: { size: 10 } }
+                            },
+                            y: {
+                                grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                ticks: { 
+                                    color: '#3b82f6', 
+                                    font: { size: 11, weight: 'bold' },
+                                    callback: (value) => value + ' min'
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                });
+            }
+            
+            // Create distance chart if applicable
+            if (hasDistance) {
+                const distanceCtx = document.getElementById(distanceChartId);
+                if (distanceCtx) {
+                    new Chart(distanceCtx, {
+                        type: 'line',
+                        data: {
+                            labels: sortedSets.map((_, i) => `#${i + 1}`),
+                            datasets: [
+                                {
+                                    label: 'Dystans (km)',
+                                    data: sortedSets.map(s => s.distance || 0),
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    borderWidth: 3,
+                                    tension: 0.3,
+                                    fill: true,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                    titleColor: '#10b981',
+                                    bodyColor: '#fff',
+                                    borderColor: '#10b981',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    displayColors: false,
+                                    callbacks: {
+                                        title: (items) => {
+                                            const index = items[0].dataIndex;
+                                            const date = new Date(sortedSets[index].timestamp);
+                                            return date.toLocaleString('pl-PL', { 
+                                                day: '2-digit', 
+                                                month: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            });
+                                        },
+                                        label: (context) => {
+                                            const set = sortedSets[context.dataIndex];
+                                            let label = `Dystans: ${set.distance || 0} km | Czas: ${set.duration} min`;
+                                            if (set.elevation) label += ` | Wzniesienie: ${set.elevation} m`;
+                                            return label;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                    ticks: { color: '#6b7280', font: { size: 10 } }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                    ticks: { 
+                                        color: '#10b981', 
+                                        font: { size: 11, weight: 'bold' },
+                                        callback: (value) => value + ' km'
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    });
+                }
             }
         }
     </script>

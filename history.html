@@ -42,7 +42,41 @@
             </div>
         </header>
 
-        <!-- Filter -->
+        <!-- Category Filter -->
+        <div class="mb-4">
+            <div class="flex gap-2 overflow-x-auto pb-2">
+                <button 
+                    onclick="filterByType('all')"
+                    id="filterAll"
+                    class="category-btn px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all bg-gray-800 text-neon-green"
+                >
+                    Wszystkie
+                </button>
+                <button 
+                    onclick="filterByType('weighted')"
+                    id="filterWeighted"
+                    class="category-btn px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all bg-gray-800 text-gray-500"
+                >
+                    Ciężar
+                </button>
+                <button 
+                    onclick="filterByType('bodyweight')"
+                    id="filterBodyweight"
+                    class="category-btn px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all bg-gray-800 text-gray-500"
+                >
+                    Masy
+                </button>
+                <button 
+                    onclick="filterByType('timed')"
+                    id="filterTimed"
+                    class="category-btn px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all bg-gray-800 text-gray-500"
+                >
+                    Czas
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Filter -->
         <div class="mb-6">
             <input 
                 type="text" 
@@ -240,6 +274,7 @@
 
         // Initialize page
         let allSets = [];
+        let currentTypeFilter = 'all';
         
         document.addEventListener('DOMContentLoaded', () => {
             loadHistory();
@@ -247,12 +282,29 @@
             document.getElementById('searchInput').addEventListener('input', filterHistory);
             document.getElementById('editForm').addEventListener('submit', handleEditSubmit);
         });
+        
+        // Filter by type
+        function filterByType(type) {
+            currentTypeFilter = type;
+            
+            // Update button styles
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.className = 'category-btn px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all bg-gray-800 text-gray-500';
+            });
+            
+            const activeBtn = document.getElementById(`filter${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            if (activeBtn) {
+                activeBtn.className = 'category-btn px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all bg-gray-800 text-neon-green';
+            }
+            
+            // Apply filters
+            filterHistory();
+        }
 
         // Load and display history
         function loadHistory() {
             allSets = loadSets();
-            displayHistory(allSets);
-            updateCount(allSets.length);
+            filterHistory(); // Use filterHistory to apply current filters
         }
 
         // Display history list
@@ -268,26 +320,64 @@
                 return;
             }
             
+            const typeIcons = {
+                weighted: '🏋️',
+                bodyweight: '💪',
+                timed: '⏱️'
+            };
+            
             container.innerHTML = sets.map(set => {
                 const date = new Date(set.timestamp);
                 const dateStr = date.toLocaleDateString('pl-PL');
                 const timeStr = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+                const setType = set.type || 'weighted';
+                
+                let dataDisplay = '';
+                
+                if (setType === 'weighted') {
+                    dataDisplay = `
+                        <div class="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded-lg">
+                            <span class="text-neon-green font-black text-xl">${set.weight}</span>
+                            <span class="text-gray-600 text-xs font-bold">kg</span>
+                            <span class="text-gray-700 mx-1">×</span>
+                            <span class="text-white font-black text-lg">${set.reps}</span>
+                        </div>
+                    `;
+                } else if (setType === 'bodyweight') {
+                    dataDisplay = `
+                        <div class="bg-gray-900 px-3 py-2 rounded-lg text-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-white font-black text-lg">${set.reps}</span>
+                                <span class="text-gray-600 text-xs font-bold">reps</span>
+                            </div>
+                            ${set.addedWeight ? `<div class="text-xs text-gray-500 mt-1">+${set.addedWeight}kg</div>` : ''}
+                        </div>
+                    `;
+                } else if (setType === 'timed') {
+                    dataDisplay = `
+                        <div class="bg-gray-900 px-3 py-2 rounded-lg text-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-blue-400 font-black text-lg">${set.duration}</span>
+                                <span class="text-gray-600 text-xs font-bold">min</span>
+                            </div>
+                            ${set.distance ? `<div class="text-xs text-gray-400 mt-1">${set.distance}km</div>` : ''}
+                        </div>
+                    `;
+                }
                 
                 return `
                     <div class="bg-dark-card border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-colors">
                         <div class="flex items-center justify-between">
                             <div class="flex-1">
-                                <p class="font-bold text-lg">${set.exercise}</p>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">${typeIcons[setType] || '🏋️'}</span>
+                                    <p class="font-bold text-lg">${set.exercise}</p>
+                                </div>
                                 <p class="text-xs text-gray-500">${dateStr} • ${timeStr}</p>
                             </div>
                             
                             <div class="flex items-center gap-3">
-                                <div class="flex items-center gap-2 bg-gray-900 px-4 py-2 rounded-lg">
-                                    <span class="text-neon-green font-black text-xl">${set.weight}</span>
-                                    <span class="text-gray-600 text-xs font-bold">kg</span>
-                                    <span class="text-gray-700 mx-1">×</span>
-                                    <span class="text-white font-black text-lg">${set.reps}</span>
-                                </div>
+                                ${dataDisplay}
                                 
                                 <div class="flex flex-col gap-1">
                                     <button 
@@ -320,18 +410,27 @@
         function filterHistory() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             
-            if (!query) {
-                displayHistory(allSets);
-                updateCount(allSets.length);
-                return;
+            // Filter by type first
+            let filtered = allSets;
+            if (currentTypeFilter !== 'all') {
+                filtered = filtered.filter(set => (set.type || 'weighted') === currentTypeFilter);
             }
             
-            const filtered = allSets.filter(set => 
-                set.exercise.toLowerCase().includes(query)
-            );
+            // Then filter by search query
+            if (query) {
+                filtered = filtered.filter(set => 
+                    set.exercise.toLowerCase().includes(query)
+                );
+            }
             
             displayHistory(filtered);
-            updateCount(filtered.length, allSets.length);
+            
+            // Update count display
+            if (currentTypeFilter === 'all' && !query) {
+                updateCount(filtered.length);
+            } else {
+                updateCount(filtered.length, allSets.length);
+            }
         }
 
         // Update count
