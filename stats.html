@@ -839,14 +839,69 @@
         function displayChart(exerciseName, sets) {
             const container = document.getElementById('charts');
             const chartId = `chart-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
+            const volumeChartId = `volume-chart-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
+            const oneRmChartId = `onerm-chart-${exerciseName.replace(/\s+/g, '-').replace(/[()]/g, '')}`;
             const sortedSets = sets.slice().reverse(); // Oldest to newest
             
+            // Get selected formula from profile or use default (Epley)
+            const profile = JSON.parse(localStorage.getItem('gymlog_profile')) || {};
+            const selectedFormula = profile.oneRmFormula || 'epley';
+            const formulaName = {
+                epley: 'Epley',
+                brzycki: 'Brzycki',
+                lombardi: 'Lombardi',
+                landers: 'Landers',
+                oconner: "O'Conner",
+                average: 'Średnia ze wszystkich'
+            }[selectedFormula];
+            
+            // Calculate 1RM for each set using selected formula
+            let oneRmData;
+            if (selectedFormula === 'average') {
+                // Calculate average of all formulas
+                oneRmData = sortedSets.map(s => {
+                    const values = [
+                        formulas.epley(s.weight, s.reps),
+                        formulas.brzycki(s.weight, s.reps),
+                        formulas.lombardi(s.weight, s.reps),
+                        formulas.landers(s.weight, s.reps),
+                        formulas.oconner(s.weight, s.reps)
+                    ];
+                    const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+                    return avg.toFixed(1);
+                });
+            } else {
+                oneRmData = sortedSets.map(s => formulas[selectedFormula](s.weight, s.reps).toFixed(1));
+            }
+            
             container.innerHTML = `
-                <div class="bg-dark-card border border-gray-800 rounded-xl p-5">
-                    <h3 class="font-bold text-lg mb-4 text-neon-green">${exerciseName}</h3>
-                    <div class="bg-gray-900 rounded-lg p-3">
-                        <canvas id="${chartId}"></canvas>
+                <div class="bg-dark-card border border-gray-800 rounded-xl p-5 space-y-6">
+                    <h3 class="font-bold text-lg text-neon-green">${exerciseName}</h3>
+                    
+                    <!-- Weight Chart -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Ciężar w serii</h4>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <canvas id="${chartId}"></canvas>
+                        </div>
                     </div>
+                    
+                    <!-- Volume Chart -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Objętość serii (kg × powtórzenia)</h4>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <canvas id="${volumeChartId}"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 1RM Chart -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Estymowany 1RM (formuła ${formulaName})</h4>
+                        <div class="bg-gray-900 rounded-lg p-3">
+                            <canvas id="${oneRmChartId}"></canvas>
+                        </div>
+                    </div>
+                    
                     <div class="mt-4 grid grid-cols-3 gap-3 text-center">
                         <div class="bg-gray-900 rounded-lg p-3">
                             <p class="text-xs text-gray-500 mb-1">Serie</p>
@@ -857,14 +912,14 @@
                             <p class="text-lg font-bold text-neon-green">${Math.max(...sets.map(s => s.weight))} kg</p>
                         </div>
                         <div class="bg-gray-900 rounded-lg p-3">
-                            <p class="text-xs text-gray-500 mb-1">Objętość</p>
+                            <p class="text-xs text-gray-500 mb-1">Całk. objętość</p>
                             <p class="text-lg font-bold text-blue-400">${sets.reduce((sum, s) => sum + (s.weight * s.reps), 0).toFixed(0)}</p>
                         </div>
                     </div>
                 </div>
             `;
             
-            // Create chart
+            // Create weight chart
             const ctx = document.getElementById(chartId);
             if (ctx) {
                 new Chart(ctx, {
@@ -928,6 +983,158 @@
                                     color: '#10b981', 
                                     font: { size: 11, weight: 'bold' },
                                     callback: (value) => value + ' kg'
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                });
+            }
+            
+            // Create volume chart
+            const volumeCtx = document.getElementById(volumeChartId);
+            if (volumeCtx) {
+                new Chart(volumeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedSets.map((_, i) => `#${i + 1}`),
+                        datasets: [
+                            {
+                                label: 'Objętość',
+                                data: sortedSets.map(s => s.weight * s.reps),
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                titleColor: '#3b82f6',
+                                bodyColor: '#fff',
+                                borderColor: '#3b82f6',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    title: (items) => {
+                                        const index = items[0].dataIndex;
+                                        const date = new Date(sortedSets[index].timestamp);
+                                        return date.toLocaleString('pl-PL', { 
+                                            day: '2-digit', 
+                                            month: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                    },
+                                    label: (context) => {
+                                        const set = sortedSets[context.dataIndex];
+                                        const volume = set.weight * set.reps;
+                                        return `${set.weight}kg × ${set.reps} = ${volume}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                ticks: { color: '#6b7280', font: { size: 10 } }
+                            },
+                            y: {
+                                grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                ticks: { 
+                                    color: '#3b82f6', 
+                                    font: { size: 11, weight: 'bold' },
+                                    callback: (value) => value.toFixed(0)
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                });
+            }
+            
+            // Create 1RM chart
+            const oneRmCtx = document.getElementById(oneRmChartId);
+            if (oneRmCtx) {
+                new Chart(oneRmCtx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedSets.map((_, i) => `#${i + 1}`),
+                        datasets: [
+                            {
+                                label: '1RM',
+                                data: oneRmData,
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                titleColor: '#f59e0b',
+                                bodyColor: '#fff',
+                                borderColor: '#f59e0b',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    title: (items) => {
+                                        const index = items[0].dataIndex;
+                                        const date = new Date(sortedSets[index].timestamp);
+                                        return date.toLocaleString('pl-PL', { 
+                                            day: '2-digit', 
+                                            month: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                    },
+                                    label: (context) => {
+                                        const set = sortedSets[context.dataIndex];
+                                        const oneRm = oneRmData[context.dataIndex];
+                                        return `${set.weight}kg × ${set.reps} → ~${oneRm}kg 1RM`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                ticks: { color: '#6b7280', font: { size: 10 } }
+                            },
+                            y: {
+                                grid: { color: 'rgba(75, 85, 99, 0.3)' },
+                                ticks: { 
+                                    color: '#f59e0b', 
+                                    font: { size: 11, weight: 'bold' },
+                                    callback: (value) => value.toFixed(0) + ' kg'
                                 }
                             }
                         },

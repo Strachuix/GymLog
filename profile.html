@@ -144,6 +144,18 @@
                         <label for="height" class="block text-sm font-semibold text-gray-400 mb-2">Wzrost (cm)</label>
                         <input type="number" id="height" min="100" max="250" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent transition-all" placeholder="np. 180">
                     </div>
+                    <div>
+                        <label for="oneRmFormula" class="block text-sm font-semibold text-gray-400 mb-2">Formuła 1RM</label>
+                        <select id="oneRmFormula" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent transition-all">
+                            <option value="epley">Epley (domyślna)</option>
+                            <option value="brzycki">Brzycki</option>
+                            <option value="lombardi">Lombardi</option>
+                            <option value="landers">Landers</option>
+                            <option value="oconner">O'Conner</option>
+                            <option value="average">Średnia (wszystkie formuły)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Używana do estymacji maksymalnego ciężaru na wykresach</p>
+                    </div>
                     <button type="submit" class="w-full bg-neon-green hover:bg-green-600 text-gray-900 font-black py-3 rounded-lg transition-colors">
                         Zapisz dane
                     </button>
@@ -354,6 +366,7 @@
                 }
                 document.getElementById('age').value = profile.age || '';
                 document.getElementById('height').value = profile.height || '';
+                document.getElementById('oneRmFormula').value = profile.oneRmFormula || 'epley';
 
                 // Get latest weight
                 const latestWeight = weightHistory.length > 0 ? weightHistory[0].weight : null;
@@ -528,6 +541,7 @@
             const gender = document.querySelector('input[name="gender"]:checked')?.value;
             const age = parseInt(document.getElementById('age').value);
             const height = parseInt(document.getElementById('height').value);
+            const oneRmFormula = document.getElementById('oneRmFormula').value;
 
             if (!gender || !age || !height) {
                 alert('Wypełnij wszystkie pola!');
@@ -540,7 +554,8 @@
                 profilePic: existingProfile.profilePic || null,
                 gender, 
                 age, 
-                height 
+                height,
+                oneRmFormula: oneRmFormula || 'epley'
             };
             saveProfile(profile);
             updateDisplay();
