@@ -34,12 +34,15 @@
             display: flex;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             width: 400%;
+            height: calc(100vh - 280px); /* viewport minus header, tab nav, bottom nav */
         }
         
         .tab-panel {
             width: 25%;
             flex-shrink: 0;
             padding: 0 1rem;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
         
         @media (max-width: 520px) {
