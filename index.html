@@ -554,6 +554,9 @@
                 const bodyWeight = profile.weight || '--';
                 document.getElementById('bodyWeightDisplay').textContent = bodyWeight;
             }
+            
+            // Update exercise suggestions for selected type
+            loadExerciseHistory();
         }
 
         // Initialize page
@@ -601,9 +604,13 @@
             document.getElementById('exercise').select();
         }
 
-        // Load exercise history into datalist
+        // Load exercise history into datalist (filtered by current type)
         function loadExerciseHistory() {
-            const exercises = getExerciseHistory();
+            const sets = loadSets();
+            // Filter by current selected type
+            const filteredSets = sets.filter(s => (s.type || 'weighted') === selectedType);
+            // Get unique exercise names
+            const exercises = [...new Set(filteredSets.map(s => s.exercise))].sort();
             const datalist = document.getElementById('exerciseHistory');
             datalist.innerHTML = exercises.map(ex => `<option value="${ex}">`).join('');
         }
