@@ -46,7 +46,7 @@
             <!-- Profile Card -->
             <div class="bg-dark-card rounded-xl p-6 border border-gray-800">
                 <div class="flex items-center gap-4 mb-6">
-                    <div class="relative w-20 h-20 rounded-full group cursor-pointer" onclick="showProfilePicOptions()">
+                    <div class="relative w-20 h-20 rounded-full group cursor-pointer" onclick="showPictureOptions()">
                         <img id="profilePicDisplay" src="" alt="Profile" class="hidden w-full h-full rounded-full object-cover border-2 border-neon-green">
                         <div id="profilePicPlaceholder" class="w-20 h-20 rounded-full bg-gradient-to-br from-neon-green to-green-600 flex items-center justify-center">
                             <svg class="w-12 h-12 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
@@ -59,8 +59,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
                         </div>
-                        <input type="file" id="profilePicInputCamera" accept="image/*" capture="environment" class="hidden">
-                        <input type="file" id="profilePicInputGallery" accept="image/*" class="hidden">
+                        <input type="file" id="profilePicCamera" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="profilePicGallery" accept="image/*" class="hidden">
                     </div>
                     <div class="flex-1">
                         <p class="text-sm text-gray-500">Użytkownik</p>
@@ -239,6 +239,31 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Picture Options Dialog -->
+    <div id="pictureDialog" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onclick="closePictureDialog()">
+        <div class="bg-dark-card rounded-xl p-6 max-w-xs w-full border border-gray-800" onclick="event.stopPropagation()">
+            <h3 class="text-lg font-bold text-gray-200 mb-4 text-center">Wybierz źródło zdjęcia</h3>
+            <div class="space-y-3">
+                <button onclick="selectCamera()" class="w-full bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
+                    <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="text-gray-200 font-semibold">Aparat</span>
+                </button>
+                <button onclick="selectGallery()" class="w-full bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
+                    <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-gray-200 font-semibold">Galeria</span>
+                </button>
+                <button onclick="closePictureDialog()" class="w-full bg-gray-800 hover:bg-gray-700 rounded-lg p-3 text-gray-400 font-semibold transition-colors">
+                    Anuluj
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -556,23 +581,26 @@
         // Set today's date as default
         document.getElementById('weightDate').valueAsDate = new Date();
 
-        // Show profile picture options
-        window.showProfilePicOptions = function() {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            if (isMobile) {
-                const choice = confirm('Wybierz źródło:\n\nOK = Aparat\nAnuluj = Galeria');
-                if (choice) {
-                    document.getElementById('profilePicInputCamera').click();
-                } else {
-                    document.getElementById('profilePicInputGallery').click();
-                }
-            } else {
-                document.getElementById('profilePicInputGallery').click();
-            }
+        // Picture dialog functions
+        window.showPictureOptions = function() {
+            document.getElementById('pictureDialog').classList.remove('hidden');
         }
 
-        // Profile picture upload handler - unified for both inputs
+        window.closePictureDialog = function() {
+            document.getElementById('pictureDialog').classList.add('hidden');
+        }
+
+        window.selectCamera = function() {
+            closePictureDialog();
+            document.getElementById('profilePicCamera').click();
+        }
+
+        window.selectGallery = function() {
+            closePictureDialog();
+            document.getElementById('profilePicGallery').click();
+        }
+
+        // Profile picture upload handler
         function handleProfilePicUpload(e) {
             const file = e.target.files[0];
             if (file && file.type.startsWith('image/')) {
@@ -587,8 +615,8 @@
             }
         }
 
-        document.getElementById('profilePicInputCamera').addEventListener('change', handleProfilePicUpload);
-        document.getElementById('profilePicInputGallery').addEventListener('change', handleProfilePicUpload);
+        document.getElementById('profilePicCamera').addEventListener('change', handleProfilePicUpload);
+        document.getElementById('profilePicGallery').addEventListener('change', handleProfilePicUpload);
 
         // Initialize
         updateDisplay();
