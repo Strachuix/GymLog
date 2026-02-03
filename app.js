@@ -95,7 +95,7 @@ function groupSetsByExercise() {
     return grouped;
 }
 
-// Get top 3 most frequent exercises
+// Get top 5 most frequent exercises
 function getTopExercises() {
     const grouped = groupSetsByExercise();
     const exercises = Object.keys(grouped).map(name => ({
@@ -104,7 +104,7 @@ function getTopExercises() {
         totalVolume: grouped[name].reduce((sum, s) => sum + (s.weight * s.reps), 0)
     }));
     
-    return exercises.sort((a, b) => b.count - a.count).slice(0, 3);
+    return exercises.sort((a, b) => b.count - a.count).slice(0, 5);
 }
 
 // Get personal records (max weight) for each exercise
