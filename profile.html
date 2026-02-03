@@ -46,7 +46,7 @@
             <!-- Profile Card -->
             <div class="bg-dark-card rounded-xl p-6 border border-gray-800">
                 <div class="flex items-center gap-4 mb-6">
-                    <div class="relative w-20 h-20 rounded-full group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
+                    <div class="relative w-20 h-20 rounded-full group cursor-pointer" onclick="showPhotoOptions()">
                         <img id="profilePicDisplay" src="" alt="Profile" class="hidden w-full h-full rounded-full object-cover border-2 border-neon-green">
                         <div id="profilePicPlaceholder" class="w-20 h-20 rounded-full bg-gradient-to-br from-neon-green to-green-600 flex items-center justify-center p-4">
                             <img src="assets/user-solid-full.svg" alt="User" class="w-full h-full" style="filter: brightness(0) saturate(100%) invert(10%) sepia(8%) saturate(7%) hue-rotate(359deg) brightness(94%) contrast(91%);">
@@ -56,7 +56,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                         </div>
-                        <input type="file" id="profilePicInput" accept="image/*" class="hidden">
+                        <input type="file" id="cameraInput" accept="image/*" capture="user" class="hidden">
+                        <input type="file" id="galleryInput" accept="image/*" class="hidden">
                     </div>
                     <div class="flex-1">
                         <p class="text-sm text-gray-500">Użytkownik</p>
@@ -235,6 +236,31 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Photo Options Dialog -->
+    <div id="photoDialog" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onclick="closePhotoDialog()">
+        <div class="bg-dark-card rounded-xl p-6 max-w-xs w-full border border-gray-800" onclick="event.stopPropagation()">
+            <h3 class="text-lg font-bold text-gray-200 mb-4 text-center">Dodaj zdjęcie profilowe</h3>
+            <div class="space-y-3">
+                <button onclick="selectCamera()" class="w-full bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
+                    <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="text-gray-200 font-semibold">Zrób zdjęcie</span>
+                </button>
+                <button onclick="selectGallery()" class="w-full bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center gap-3 transition-colors">
+                    <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-gray-200 font-semibold">Wybierz z galerii</span>
+                </button>
+                <button onclick="closePhotoDialog()" class="w-full bg-gray-800 hover:bg-gray-700 rounded-lg p-3 text-gray-400 font-semibold transition-colors">
+                    Anuluj
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -552,20 +578,93 @@
         // Set today's date as default
         document.getElementById('weightDate').valueAsDate = new Date();
 
-        // Profile picture upload handler
-        document.getElementById('profilePicInput').addEventListener('change', function(e) {
+        // Photo dialog controls
+        window.showPhotoOptions = function() {
+            document.getElementById('photoDialog').classList.remove('hidden');
+        }
+
+        window.closePhotoDialog = function() {
+            document.getElementById('photoDialog').classList.add('hidden');
+        }
+
+        window.selectCamera = function() {
+            closePhotoDialog();
+            document.getElementById('cameraInput').click();
+        }
+
+        window.selectGallery = function() {
+            closePhotoDialog();
+            document.getElementById('galleryInput').click();
+        }
+
+        // Compress image to WebP format (max 200KB)
+        async function compressImageToWebP(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Start with reasonable size
+                        const maxDimension = 800;
+                        if (width > height && width > maxDimension) {
+                            height = (height / width) * maxDimension;
+                            width = maxDimension;
+                        } else if (height > maxDimension) {
+                            width = (width / height) * maxDimension;
+                            height = maxDimension;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Try different quality levels to get under 200KB
+                        let quality = 0.9;
+                        let result = canvas.toDataURL('image/webp', quality);
+                        
+                        // Keep reducing quality until file is under 200KB
+                        while (result.length > 200 * 1024 * 1.37 && quality > 0.1) {
+                            quality -= 0.1;
+                            result = canvas.toDataURL('image/webp', quality);
+                        }
+                        
+                        resolve(result);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Handle photo upload from camera or gallery
+        async function handlePhotoUpload(e) {
             const file = e.target.files[0];
             if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
+                try {
+                    const compressedImage = await compressImageToWebP(file);
                     const profile = loadProfile() || {};
-                    profile.profilePic = event.target.result;
+                    profile.profilePic = compressedImage;
                     localStorage.setItem('gymlog_profile', JSON.stringify(profile));
                     updateDisplay();
-                };
-                reader.readAsDataURL(file);
+                } catch (error) {
+                    console.error('Error processing image:', error);
+                    alert('Błąd podczas przetwarzania zdjęcia');
+                }
             }
-        });
+            // Reset input
+            e.target.value = '';
+        }
+
+        document.getElementById('cameraInput').addEventListener('change', handlePhotoUpload);
+        document.getElementById('galleryInput').addEventListener('change', handlePhotoUpload);
 
         // Initialize
         updateDisplay();
