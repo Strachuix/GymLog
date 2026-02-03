@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#121212">
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/logo-small-64.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/logo-small-256.png">
+    <link rel="manifest" href="manifest.json">
+    <title>GymLog - Kalkulator 1RM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon-green': '#10b981',
+                        'dark-bg': '#121212',
+                        'dark-card': '#1e1e1e',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in { animation: slideIn 0.3s ease-out; }
+    </style>
+</head>
+<body class="bg-dark-bg text-gray-100 min-h-screen pb-20">
+    <div class="max-w-lg mx-auto p-4 sm:p-6">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8 pt-4">
+            <div class="flex items-center gap-3">
+                <img src="assets/logo.png" alt="GymLog" class="h-10 w-auto">
+                <h1 class="text-2xl font-black text-neon-green">Kalkulator 1RM</h1>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="space-y-6">
+            <!-- Info Box -->
+            <div class="bg-dark-card rounded-lg p-4 border border-gray-800">
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div class="text-sm text-gray-300">
+                        <p class="font-semibold mb-1">Czym jest 1RM?</p>
+                        <p class="text-gray-400">1RM (One Rep Max) to maksymalny ciężar, który możesz unieść w jednym powtórzeniu. Kalkulator szacuje Twój 1RM na podstawie ostatniego wykonania ćwiczenia.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exercise Selection -->
+            <div class="bg-dark-card rounded-lg p-6 border border-gray-800">
+                <label class="block text-sm font-semibold text-gray-300 mb-3">
+                    <svg class="w-5 h-5 inline-block mr-2 text-neon-green" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+                    </svg>
+                    Wybierz ćwiczenie
+                </label>
+                <select id="exerciseSelect" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent transition-all">
+                    <option value="">-- Wybierz ćwiczenie --</option>
+                </select>
+            </div>
+
+            <!-- Last Performance Info -->
+            <div id="lastPerformanceBox" class="hidden bg-dark-card rounded-lg p-6 border border-gray-800 animate-slide-in">
+                <h3 class="text-lg font-bold text-gray-300 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Ostatnie wykonanie
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 mb-1">Ciężar</p>
+                        <p id="lastWeight" class="text-2xl font-black text-neon-green">-</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 mb-1">Powtórzenia</p>
+                        <p id="lastReps" class="text-2xl font-black text-neon-green">-</p>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-gray-500">
+                    <p id="lastDate">Data: -</p>
+                </div>
+            </div>
+
+            <!-- Formula Selection -->
+            <div id="formulaBox" class="hidden bg-dark-card rounded-lg p-6 border border-gray-800 animate-slide-in">
+                <label class="block text-sm font-semibold text-gray-300 mb-3">
+                    <svg class="w-5 h-5 inline-block mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    Wybierz formułę
+                </label>
+                <select id="formulaSelect" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent transition-all">
+                    <option value="epley">Epley (najpopularniejsza)</option>
+                    <option value="brzycki">Brzycki</option>
+                    <option value="lombardi">Lombardi</option>
+                    <option value="landers">Landers</option>
+                    <option value="oconner">O'Conner</option>
+                    <option value="all">Wszystkie formuły</option>
+                </select>
+                <div class="mt-3 text-xs text-gray-500">
+                    <p id="formulaDescription">Formuła Epley: 1RM = w × (1 + r/30)</p>
+                </div>
+            </div>
+
+            <!-- Calculate Button -->
+            <button id="calculateBtn" class="hidden w-full bg-neon-green hover:bg-green-600 text-gray-900 font-black py-4 rounded-lg transition-colors animate-slide-in">
+                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                Oblicz 1RM
+            </button>
+
+            <!-- Results -->
+            <div id="resultsBox" class="hidden space-y-4 animate-slide-in">
+                <!-- Single Result -->
+                <div id="singleResult" class="hidden bg-gradient-to-br from-neon-green to-green-600 rounded-lg p-6 text-center">
+                    <p class="text-sm font-semibold text-gray-900 mb-2">Twój szacowany 1RM</p>
+                    <p class="text-5xl font-black text-gray-900 mb-1" id="resultValue">-</p>
+                    <p class="text-sm text-gray-800" id="resultFormula">-</p>
+                </div>
+
+                <!-- Multiple Results -->
+                <div id="multipleResults" class="hidden bg-dark-card rounded-lg p-6 border border-gray-800">
+                    <h3 class="text-lg font-bold text-gray-300 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        Porównanie formuł
+                    </h3>
+                    <div id="allResults" class="space-y-3">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-400">Średnia:</span>
+                            <span class="text-xl font-bold text-neon-green" id="averageResult">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info about accuracy -->
+                <div class="bg-dark-card rounded-lg p-4 border border-gray-800">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <div class="text-xs text-gray-400">
+                            <p class="font-semibold mb-1">Uwaga!</p>
+                            <p>To tylko szacunkowa wartość. Rzeczywisty 1RM może różnić się o ±10%. Najlepsze wyniki dla 1-10 powtórzeń. Formuły są dla doświadczonych osób.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No Data Message -->
+            <div id="noDataBox" class="hidden bg-dark-card rounded-lg p-8 border border-gray-800 text-center animate-slide-in">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                </svg>
+                <p class="text-gray-400 mb-2">Brak danych treningowych</p>
+                <p class="text-sm text-gray-500">Najpierw zapisz kilka ćwiczeń w aplikacji</p>
+                <a href="index.html" class="inline-block mt-4 text-neon-green hover:text-green-400 text-sm font-semibold">
+                    Przejdź do treningu →
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-gray-800 z-50">
+        <div class="max-w-lg mx-auto flex">
+            <a href="index.html" class="flex-1 flex flex-col items-center justify-center py-4 text-gray-500 hover:text-gray-400 transition-colors">
+                <img src="assets/dumbbell-solid-full.svg" alt="Trening" class="w-7 h-7 mb-1" style="filter: brightness(0) saturate(100%) invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);">
+                <span class="text-xs font-bold">TRENING</span>
+            </a>
+            <a href="stats.html" class="flex-1 flex flex-col items-center justify-center py-4 text-gray-500 hover:text-gray-400 transition-colors">
+                <img src="assets/chart-simple-solid-full.svg" alt="Statystyki" class="w-7 h-7 mb-1" style="filter: brightness(0) saturate(100%) invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);">
+                <span class="text-xs font-bold">STATYSTYKI</span>
+            </a>
+            <a href="history.html" class="flex-1 flex flex-col items-center justify-center py-4 text-gray-500 hover:text-gray-400 transition-colors">
+                <svg class="w-7 h-7 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 3C8.03 3 4 7.03 4 12H1L4.89 15.89L4.96 16.03L9 12H6C6 8.13 9.13 5 13 5C16.87 5 20 8.13 20 12C20 15.87 16.87 19 13 19C11.07 19 9.32 18.21 8.06 16.94L6.64 18.36C8.27 19.99 10.51 21 13 21C17.97 21 22 16.97 22 12C22 7.03 17.97 3 13 3M12 8V13L16.28 15.54L17 14.33L13.5 12.25V8H12Z"/>
+                </svg>
+                <span class="text-xs font-bold">HISTORIA</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+    <script>
+        // 1RM Calculation formulas
+        const formulas = {
+            epley: (weight, reps) => weight * (1 + reps / 30),
+            brzycki: (weight, reps) => weight * (36 / (37 - reps)),
+            lombardi: (weight, reps) => weight * Math.pow(reps, 0.10),
+            landers: (weight, reps) => (100 * weight) / (101.3 - 2.67123 * reps),
+            oconner: (weight, reps) => weight * (1 + reps / 40)
+        };
+
+        const formulaDescriptions = {
+            epley: 'Formuła Epley: 1RM = w × (1 + r/30) - najpopularniejsza',
+            brzycki: 'Formuła Brzycki: 1RM = w × (36/(37 - r)) - bardzo dokładna',
+            lombardi: 'Formuła Lombardi: 1RM = w × r^0.10 - dla małych liczb powtórzeń',
+            landers: 'Formuła Landers: 1RM = (100 × w)/(101.3 - 2.67123 × r)',
+            oconner: 'Formuła O\'Conner: 1RM = w × (1 + r/40) - konserwatywna',
+            all: 'Porównaj wszystkie formuły i zobacz średnią'
+        };
+
+        const formulaNames = {
+            epley: 'Epley',
+            brzycki: 'Brzycki',
+            lombardi: 'Lombardi',
+            landers: 'Landers',
+            oconner: 'O\'Conner'
+        };
+
+        // DOM elements
+        const exerciseSelect = document.getElementById('exerciseSelect');
+        const formulaSelect = document.getElementById('formulaSelect');
+        const formulaDescription = document.getElementById('formulaDescription');
+        const lastPerformanceBox = document.getElementById('lastPerformanceBox');
+        const formulaBox = document.getElementById('formulaBox');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultsBox = document.getElementById('resultsBox');
+        const singleResult = document.getElementById('singleResult');
+        const multipleResults = document.getElementById('multipleResults');
+        const noDataBox = document.getElementById('noDataBox');
+        const lastWeight = document.getElementById('lastWeight');
+        const lastReps = document.getElementById('lastReps');
+        const lastDate = document.getElementById('lastDate');
+        const resultValue = document.getElementById('resultValue');
+        const resultFormula = document.getElementById('resultFormula');
+        const allResults = document.getElementById('allResults');
+        const averageResult = document.getElementById('averageResult');
+
+        let currentExerciseData = null;
+
+        // Initialize
+        function init() {
+            const sets = loadSets();
+            
+            if (sets.length === 0) {
+                noDataBox.classList.remove('hidden');
+                return;
+            }
+
+            // Populate exercise select
+            const exercises = [...new Set(sets.map(s => s.exercise))].sort();
+            exercises.forEach(exercise => {
+                const option = document.createElement('option');
+                option.value = exercise;
+                option.textContent = exercise;
+                exerciseSelect.appendChild(option);
+            });
+
+            // Event listeners
+            exerciseSelect.addEventListener('change', onExerciseChange);
+            formulaSelect.addEventListener('change', onFormulaChange);
+            calculateBtn.addEventListener('click', calculate);
+        }
+
+        function onExerciseChange() {
+            const exercise = exerciseSelect.value;
+            
+            if (!exercise) {
+                lastPerformanceBox.classList.add('hidden');
+                formulaBox.classList.add('hidden');
+                calculateBtn.classList.add('hidden');
+                resultsBox.classList.add('hidden');
+                return;
+            }
+
+            // Get last set for this exercise
+            const lastSet = getLastSetForExercise(exercise);
+            
+            if (!lastSet) {
+                alert('Brak danych dla tego ćwiczenia');
+                return;
+            }
+
+            currentExerciseData = lastSet;
+
+            // Show last performance
+            lastWeight.textContent = `${lastSet.weight} kg`;
+            lastReps.textContent = lastSet.reps;
+            
+            const date = new Date(lastSet.timestamp);
+            lastDate.textContent = `Data: ${date.toLocaleDateString('pl-PL')} ${date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`;
+
+            lastPerformanceBox.classList.remove('hidden');
+            formulaBox.classList.remove('hidden');
+            calculateBtn.classList.remove('hidden');
+            resultsBox.classList.add('hidden');
+        }
+
+        function onFormulaChange() {
+            const formula = formulaSelect.value;
+            formulaDescription.textContent = formulaDescriptions[formula];
+        }
+
+        function calculate() {
+            if (!currentExerciseData) return;
+
+            const weight = parseFloat(currentExerciseData.weight);
+            const reps = parseInt(currentExerciseData.reps);
+            const selectedFormula = formulaSelect.value;
+
+            // Validate data
+            if (reps < 1 || reps > 20) {
+                alert('Formuły są najdokładniejsze dla 1-10 powtórzeń. Wyniki dla powyżej 10 powtórzeń mogą być mniej dokładne.');
+            }
+
+            resultsBox.classList.remove('hidden');
+
+            if (selectedFormula === 'all') {
+                // Show all formulas
+                singleResult.classList.add('hidden');
+                multipleResults.classList.remove('hidden');
+
+                allResults.innerHTML = '';
+                let sum = 0;
+                let count = 0;
+
+                Object.keys(formulas).forEach(key => {
+                    const result = formulas[key](weight, reps);
+                    sum += result;
+                    count++;
+
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center bg-gray-900 rounded-lg px-4 py-3';
+                    div.innerHTML = `
+                        <span class="text-sm text-gray-400">${formulaNames[key]}</span>
+                        <span class="text-lg font-bold text-neon-green">${result.toFixed(1)} kg</span>
+                    `;
+                    allResults.appendChild(div);
+                });
+
+                const average = sum / count;
+                averageResult.textContent = `${average.toFixed(1)} kg`;
+            } else {
+                // Show single formula result
+                singleResult.classList.remove('hidden');
+                multipleResults.classList.add('hidden');
+
+                const result = formulas[selectedFormula](weight, reps);
+                resultValue.textContent = `${result.toFixed(1)} kg`;
+                resultFormula.textContent = `Formuła ${formulaNames[selectedFormula]}`;
+            }
+
+            // Scroll to results
+            resultsBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Initialize on load
+        init();
+
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
