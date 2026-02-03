@@ -587,14 +587,71 @@
             document.getElementById('photoDialog').classList.add('hidden');
         }
 
-        window.selectCamera = function() {
+        // Check camera permissions before opening
+        window.selectCamera = async function() {
             closePhotoDialog();
-            document.getElementById('cameraInput').click();
+            
+            try {
+                // Check if Permissions API is supported
+                if (navigator.permissions && navigator.permissions.query) {
+                    const result = await navigator.permissions.query({ name: 'camera' });
+                    
+                    if (result.state === 'denied') {
+                        showCameraBlockedModal();
+                        return;
+                    }
+                }
+                
+                // If permissions are granted or prompt, open camera input
+                document.getElementById('cameraInput').click();
+            } catch (error) {
+                console.error('Error checking camera permissions:', error);
+                // Fallback: try to open camera anyway (for browsers without Permissions API)
+                document.getElementById('cameraInput').click();
+            }
         }
 
         window.selectGallery = function() {
             closePhotoDialog();
             document.getElementById('galleryInput').click();
+        }
+
+        // Show camera blocked modal
+        function showCameraBlockedModal() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-dark-card rounded-xl p-6 max-w-sm w-full border border-gray-800">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-red-500/20 p-3 rounded-lg">
+                            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-200">Aparat zablokowany</h3>
+                    </div>
+                    <p class="text-gray-400 mb-6">
+                        Dostęp do aparatu jest zablokowany w ustawieniach przeglądarki. 
+                        Aby zrobić zdjęcie, musisz włączyć uprawnienia do aparatu.
+                    </p>
+                    <div class="space-y-3">
+                        <button onclick="this.closest('.fixed').remove()" class="w-full bg-neon-green hover:bg-emerald-400 text-dark-bg font-bold py-3 rounded-lg transition-colors">
+                            Rozumiem
+                        </button>
+                        <p class="text-xs text-gray-500 text-center">
+                            Kliknij ikonę 🔒 w pasku adresu, aby zmienić ustawienia
+                        </p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
         }
 
         // Compress image to WebP format (max 200KB)
