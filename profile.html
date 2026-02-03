@@ -46,14 +46,24 @@
             <!-- Profile Card -->
             <div class="bg-dark-card rounded-xl p-6 border border-gray-800">
                 <div class="flex items-center gap-4 mb-6">
-                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-neon-green to-green-600 flex items-center justify-center">
-                        <svg class="w-12 h-12 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
+                    <div class="relative w-20 h-20 rounded-full group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
+                        <img id="profilePicDisplay" src="" alt="Profile" class="hidden w-full h-full rounded-full object-cover border-2 border-neon-green">
+                        <div id="profilePicPlaceholder" class="w-20 h-20 rounded-full bg-gradient-to-br from-neon-green to-green-600 flex items-center justify-center">
+                            <svg class="w-12 h-12 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                        </div>
+                        <div class="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <input type="file" id="profilePicInput" accept="image/*" class="hidden">
                     </div>
-                    <div>
+                    <div class="flex-1">
                         <p class="text-sm text-gray-500">Użytkownik</p>
-                        <p class="text-xl font-bold text-gray-200">GymLog User</p>
+                        <p id="displayUsername" class="text-xl font-bold text-gray-200">GymLog User</p>
                     </div>
                 </div>
 
@@ -105,6 +115,10 @@
                     Edytuj dane
                 </h3>
                 <form id="profileForm" class="space-y-4">
+                    <div>
+                        <label for="username" class="block text-sm font-semibold text-gray-400 mb-2">Nazwa użytkownika</label>
+                        <input type="text" id="username" maxlength="30" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-neon-green focus:border-transparent transition-all" placeholder="np. Jan Kowalski">
+                    </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-400 mb-2">Płeć</label>
                         <div class="flex gap-3">
@@ -294,10 +308,24 @@
             const weightHistory = loadWeightHistory();
 
             if (profile) {
+                // Display username
+                document.getElementById('displayUsername').textContent = profile.username || 'GymLog User';
+                
+                // Display profile picture
+                if (profile.profilePic) {
+                    document.getElementById('profilePicDisplay').src = profile.profilePic;
+                    document.getElementById('profilePicDisplay').classList.remove('hidden');
+                    document.getElementById('profilePicPlaceholder').classList.add('hidden');
+                } else {
+                    document.getElementById('profilePicDisplay').classList.add('hidden');
+                    document.getElementById('profilePicPlaceholder').classList.remove('hidden');
+                }
+                
                 document.getElementById('displayAge').textContent = profile.age || '-';
                 document.getElementById('displayHeight').textContent = profile.height ? `${profile.height} cm` : '-';
                 
                 // Set form values
+                document.getElementById('username').value = profile.username || '';
                 if (profile.gender) {
                     document.querySelector(`input[name="gender"][value="${profile.gender}"]`).checked = true;
                 }
@@ -335,6 +363,9 @@
                 displayWeightHistory(weightHistory);
                 document.getElementById('weightChartContainer').classList.remove('hidden');
                 document.getElementById('weightHistoryContainer').classList.remove('hidden');
+            } else {
+                document.getElementById('weightChartContainer').classList.add('hidden');
+                document.getElementById('weightHistoryContainer').classList.add('hidden');
             }
         }
 
@@ -446,8 +477,8 @@
             }).join('');
         }
 
-        // Delete weight entry
-        function deleteWeightEntry(index) {
+        // Delete weight entry - make it global
+        window.deleteWeightEntry = function(index) {
             if (!confirm('Czy na pewno chcesz usunąć ten wpis?')) return;
             
             const history = loadWeightHistory();
@@ -470,6 +501,7 @@
         document.getElementById('profileForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
+            const username = document.getElementById('username').value.trim();
             const gender = document.querySelector('input[name="gender"]:checked')?.value;
             const age = parseInt(document.getElementById('age').value);
             const height = parseInt(document.getElementById('height').value);
@@ -479,7 +511,14 @@
                 return;
             }
 
-            const profile = { gender, age, height };
+            const existingProfile = loadProfile() || {};
+            const profile = { 
+                username: username || 'GymLog User',
+                profilePic: existingProfile.profilePic || null,
+                gender, 
+                age, 
+                height 
+            };
             saveProfile(profile);
             updateDisplay();
             alert('✅ Dane zapisane!');
@@ -516,12 +555,23 @@
         // Set today's date as default
         document.getElementById('weightDate').valueAsDate = new Date();
 
+        // Profile picture upload handler
+        document.getElementById('profilePicInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const profile = loadProfile() || {};
+                    profile.profilePic = event.target.result;
+                    localStorage.setItem('gymlog_profile', JSON.stringify(profile));
+                    updateDisplay();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
         // Initialize
         updateDisplay();
-
-        // Set today's date as default for weight date input
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('weightDate').value = today;
 
         // Get version from Service Worker
         if ('serviceWorker' in navigator) {
