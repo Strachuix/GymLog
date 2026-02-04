@@ -134,19 +134,48 @@ function getPersonalRecords() {
     
     Object.keys(grouped).forEach(exerciseName => {
         const sets = grouped[exerciseName];
-        const maxWeightSet = sets.reduce((max, set) => 
-            set.weight > max.weight ? set : max
-        );
+        const exerciseType = sets[0].type || 'weighted';
+        
+        let maxSet;
+        if (exerciseType === 'weighted') {
+            maxSet = sets.reduce((max, set) => 
+                set.weight > max.weight ? set : max
+            );
+        } else if (exerciseType === 'bodyweight') {
+            maxSet = sets.reduce((max, set) => 
+                set.reps > max.reps ? set : max
+            );
+        } else if (exerciseType === 'timed') {
+            // For timed: longest duration
+            maxSet = sets.reduce((max, set) => 
+                set.duration > max.duration ? set : max
+            );
+        }
         
         records.push({
             exercise: exerciseName,
-            weight: maxWeightSet.weight,
-            reps: maxWeightSet.reps,
-            date: maxWeightSet.timestamp
+            type: exerciseType,
+            weight: maxSet.weight,
+            reps: maxSet.reps,
+            addedWeight: maxSet.addedWeight,
+            duration: maxSet.duration,
+            distance: maxSet.distance,
+            date: maxSet.timestamp
         });
     });
     
-    return records.sort((a, b) => b.weight - a.weight);
+    return records.sort((a, b) => {
+        // Sort weighted by weight, bodyweight by reps, timed by duration
+        if (a.type === 'weighted' && b.type === 'weighted') {
+            return b.weight - a.weight;
+        } else if (a.type === 'bodyweight' && b.type === 'bodyweight') {
+            return b.reps - a.reps;
+        } else if (a.type === 'timed' && b.type === 'timed') {
+            return b.duration - a.duration;
+        }
+        // Mixed types - maintain alphabetical
+        return a.exercise.localeCompare(b.exercise);
+    });
 }
 
 // Check if new set is a personal record
