@@ -23,13 +23,13 @@ GymLog jest aplikacją single-page z dwoma widokami (index.html, stats.html) wyk
 │  index.html  │  stats.html          │
 │  (Trening)   │  (Statystyki)        │
 ├─────────────────────────────────────┤
-│           app.js                     │
+│           app.js                    │
 │     (Wspólna logika)                │
 ├─────────────────────────────────────┤
-│        localStorage                  │
+│        localStorage                 │
 │    (gymlog_data: Array)             │
 ├─────────────────────────────────────┤
-│       Service Worker                 │
+│       Service Worker                │
 │      (Cache offline)                │
 └─────────────────────────────────────┘
 ```

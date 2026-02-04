@@ -218,35 +218,76 @@ function calculate1RM() {
 
 // Display top 5 exercises
 function displayTopExercises() {
-    const topExercises = getTopExercises();
+    const topWeighted = getTopExercises();
+    const topTimed = getTopTimedExercises();
     const container = document.getElementById('topExercises');
     
-    if (topExercises.length === 0) {
-        container.innerHTML = `
+    let html = '';
+    
+    // Top 5 Weighted Exercises
+    if (topWeighted.length > 0) {
+        html += `<div class="mb-6">
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3">🏋️ Top 5 - Ćwiczenia z ciężarem</h3>
+        `;
+        
+        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+        
+        html += topWeighted.map((ex, i) => `
+            <div class="bg-dark-card border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors mb-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">${medals[i]}</span>
+                    <div>
+                        <p class="font-bold text-lg">${ex.name}</p>
+                        <p class="text-xs text-gray-500">${ex.count} ${ex.count === 1 ? 'seria' : 'serii'}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-neon-green font-black text-sm">${ex.totalVolume.toFixed(0)}</p>
+                    <p class="text-xs text-gray-600">objętość</p>
+                </div>
+            </div>
+        `).join('');
+        
+        html += `</div>`;
+    }
+    
+    // Top 5 Timed Exercises
+    if (topTimed.length > 0) {
+        html += `<div class="mb-6">
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3">⏱️ Top 5 - Ćwiczenia czasowe</h3>
+        `;
+        
+        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+        
+        html += topTimed.map((ex, i) => `
+            <div class="bg-dark-card border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors mb-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">${medals[i]}</span>
+                    <div>
+                        <p class="font-bold text-lg">${ex.name}</p>
+                        <p class="text-xs text-gray-500">${ex.count} ${ex.count === 1 ? 'seria' : 'serii'}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-blue-400 font-black text-sm">${ex.totalDuration.toFixed(1)} min</p>
+                    ${ex.totalDistance > 0 ? `<p class="text-xs text-gray-600">${ex.totalDistance.toFixed(1)} km</p>` : `<p class="text-xs text-gray-600">łącznie</p>`}
+                </div>
+            </div>
+        `).join('');
+        
+        html += `</div>`;
+    }
+    
+    // No data message
+    if (topWeighted.length === 0 && topTimed.length === 0) {
+        html = `
             <div class="bg-dark-card border-2 border-dashed border-gray-800 rounded-2xl p-8 text-center">
                 <p class="text-gray-600 font-medium">Brak danych</p>
             </div>
         `;
-        return;
     }
     
-    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-    
-    container.innerHTML = topExercises.map((ex, i) => `
-        <div class="bg-dark-card border border-gray-800 rounded-xl p-4 flex items-center justify-between hover:border-gray-700 transition-colors">
-            <div class="flex items-center gap-3">
-                <span class="text-3xl">${medals[i]}</span>
-                <div>
-                    <p class="font-bold text-lg">${ex.name}</p>
-                    <p class="text-xs text-gray-500">${ex.count} ${ex.count === 1 ? 'seria' : 'serii'}</p>
-                </div>
-            </div>
-            <div class="text-right">
-                <p class="text-neon-green font-black text-sm">${ex.totalVolume.toFixed(0)}</p>
-                <p class="text-xs text-gray-600">objętość</p>
-            </div>
-        </div>
-    `).join('');
+    container.innerHTML = html;
 }
 
 // Display personal records with share button

@@ -115,14 +115,39 @@ function groupSetsByExercise() {
     return grouped;
 }
 
-// Get top 5 most frequent exercises
+// Get top 5 most frequent WEIGHTED exercises (excludes bodyweight and timed)
 function getTopExercises() {
     const grouped = groupSetsByExercise();
-    const exercises = Object.keys(grouped).map(name => ({
-        name: name,
-        count: grouped[name].length,
-        totalVolume: grouped[name].reduce((sum, s) => sum + (s.weight * s.reps), 0)
-    }));
+    const exercises = Object.keys(grouped)
+        .filter(name => {
+            const sets = grouped[name];
+            const type = sets[0].type || 'weighted';
+            return type === 'weighted'; // Only weighted exercises
+        })
+        .map(name => ({
+            name: name,
+            count: grouped[name].length,
+            totalVolume: grouped[name].reduce((sum, s) => sum + (s.weight * s.reps), 0)
+        }));
+    
+    return exercises.sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 5);
+}
+
+// Get top 5 most frequent TIMED exercises
+function getTopTimedExercises() {
+    const grouped = groupSetsByExercise();
+    const exercises = Object.keys(grouped)
+        .filter(name => {
+            const sets = grouped[name];
+            const type = sets[0].type || 'weighted';
+            return type === 'timed'; // Only timed exercises
+        })
+        .map(name => ({
+            name: name,
+            count: grouped[name].length,
+            totalDuration: grouped[name].reduce((sum, s) => sum + (s.duration || 0), 0),
+            totalDistance: grouped[name].reduce((sum, s) => sum + (s.distance || 0), 0)
+        }));
     
     return exercises.sort((a, b) => b.count - a.count).slice(0, 5);
 }
