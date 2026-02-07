@@ -200,51 +200,25 @@ document.getElementById('newSessionBtn').addEventListener('click', async () => {
     }
 });
 
-document.getElementById('exportBtn').addEventListener('click', async () => {
-    showLoading('Eksportowanie danych...');
-    try {
-        const data = await db.exportData();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `gymlog_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        hideLoading();
-        showToast('Dane wyeksportowane pomyślnie', 'success');
-    } catch (error) {
-        hideLoading();
-        console.error('Failed to export data:', error);
-        showToast('Nie udało się wyeksportować danych', 'error');
-    }
+document.getElementById('exportBtn').addEventListener('click', () => {
+    exportToJSON(); // Uses function from app.js
 });
 
 document.getElementById('importBtn').addEventListener('click', () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'application/json';
+    input.accept = '.json';
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        showLoading('Importowanie danych...');
         try {
-            const text = await file.text();
-            const data = JSON.parse(text);
-            const result = await db.importData(data);
-            hideLoading();
-            
-            if (result.success) {
-                showToast('Dane zaimportowane pomyślnie', 'success');
-                await loadDashboard();
-            } else {
-                showToast(`Błąd importu: ${result.message}`, 'error');
-            }
+            const result = await importFromJSON(file); // Uses function from app.js
+            alert(`Import zakończony!\nZaimportowano: ${result.imported}\nPominięto: ${result.skipped}`);
+            await loadDashboard();
         } catch (error) {
-            hideLoading();
             console.error('Failed to import data:', error);
-            showToast('Nie udało się zaimportować danych', 'error');
+            alert('Błąd importu: ' + error.message);
         }
     };
     input.click();

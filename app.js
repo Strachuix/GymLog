@@ -280,8 +280,20 @@ function importFromJSON(file) {
                 
                 importedSets.forEach(set => {
                     // Validate required fields
-                    if (!set.exercise || set.weight === undefined || set.reps === undefined) {
-                        return; // Skip invalid entries
+                    if (!set.exercise) {
+                        return; // Skip if no exercise name
+                    }
+                    
+                    // Validate type-specific fields
+                    const setType = set.type || 'weighted';
+                    if (setType === 'weighted' && (set.weight === undefined || set.reps === undefined)) {
+                        return; // Weighted needs weight and reps
+                    }
+                    if (setType === 'bodyweight' && set.reps === undefined) {
+                        return; // Bodyweight needs reps
+                    }
+                    if (setType === 'timed' && (set.duration === undefined || set.distance === undefined)) {
+                        return; // Timed needs duration and distance
                     }
                     
                     // Sanitize exercise name
@@ -306,14 +318,35 @@ function importFromJSON(file) {
                         set.timestamp = Date.now();
                     }
                     
-                    newSets.push({
+                    // Build set object based on type
+                    const newSet = {
                         id: set.id,
                         exercise: sanitizedExercise,
-                        weight: parseFloat(set.weight),
-                        reps: parseInt(set.reps),
+                        type: setType,
                         timestamp: set.timestamp
-                    });
+                    };
                     
+                    // Add type-specific fields
+                    if (setType === 'weighted') {
+                        newSet.weight = parseFloat(set.weight);
+                        newSet.reps = parseInt(set.reps);
+                    } else if (setType === 'bodyweight') {
+                        newSet.reps = parseInt(set.reps);
+                        if (set.addedWeight !== undefined) {
+                            newSet.addedWeight = parseFloat(set.addedWeight);
+                        }
+                        if (set.bodyWeight !== undefined) {
+                            newSet.bodyWeight = parseFloat(set.bodyWeight);
+                        }
+                    } else if (setType === 'timed') {
+                        newSet.duration = parseInt(set.duration);
+                        newSet.distance = parseInt(set.distance);
+                        if (set.avgPace !== undefined) {
+                            newSet.avgPace = parseFloat(set.avgPace);
+                        }
+                    }
+                    
+                    newSets.push(newSet);
                     imported++;
                     existingIds.add(set.id);
                 });
