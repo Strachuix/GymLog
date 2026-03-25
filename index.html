@@ -358,6 +358,17 @@
                 <!-- Buttons -->
                 <div class="space-y-3">
                     <button 
+                        id="shareAsImageBtn"
+                        onclick="exportPopupToImage()"
+                        class="w-full bg-dark-bg hover:bg-gray-900 text-neon-green font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
+                        data-html2canvas-ignore="true"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 8a3 3 0 11-6 0 3 3 0 016 0zm-7 8a7 7 0 1114 0H8z"/>
+                        </svg>
+                        Udostępnij jako grafikę
+                    </button>
+                    <button 
                         onclick="shareRecord()"
                         class="w-full bg-dark-bg hover:bg-gray-900 text-neon-green font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
                     >
@@ -404,6 +415,7 @@
     </button>
 
     <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
     <script src="app.js"></script>
     <script src="install.js"></script>
     <script src="js/sw-manager.js"></script>

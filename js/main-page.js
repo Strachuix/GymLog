@@ -329,3 +329,47 @@ function shareRecord() {
         });
     }
 }
+
+async function exportPopupToImage() {
+    const popup = document.getElementById('recordModal');
+    const shareBtn = document.getElementById('shareAsImageBtn');
+    if (!popup || !shareBtn) return;
+
+    // Hide the share button for the screenshot
+    shareBtn.style.display = 'none';
+    // Wait for reflow
+    await new Promise(r => setTimeout(r, 100));
+
+    try {
+        const canvas = await html2canvas(popup, {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: null // transparent
+        });
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const file = new File([blob], 'moj_rekord.png', { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+            await navigator.share({
+                files: [file],
+                title: 'Nowy rekord GymLog',
+                text: 'Udostępnij swój rekord!'
+            });
+        } else {
+            // Fallback: download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'moj_rekord.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    } catch (err) {
+        alert('Błąd podczas generowania grafiki: ' + err.message);
+    } finally {
+        // Restore the share button
+        shareBtn.style.display = '';
+    }
+}
