@@ -10,17 +10,29 @@ function loadProfile() {
 // Save profile data
 function saveProfile(profile) {
     localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    window.queuePendingCloudSync?.('profile');
 }
 
 // Load weight history
 function loadWeightHistory() {
     const data = localStorage.getItem(WEIGHT_HISTORY_KEY);
-    return data ? JSON.parse(data) : [];
+    const history = data ? JSON.parse(data) : [];
+
+    return history.map(entry => ({
+        ...entry,
+        id: entry.id || `${new Date(entry.timestamp || entry.date).getTime()}-${entry.weight}`
+    }));
 }
 
 // Save weight history
 function saveWeightHistory(history) {
-    localStorage.setItem(WEIGHT_HISTORY_KEY, JSON.stringify(history));
+    const normalizedHistory = history.map(entry => ({
+        ...entry,
+        id: entry.id || `${new Date(entry.timestamp || entry.date).getTime()}-${entry.weight}`
+    }));
+
+    localStorage.setItem(WEIGHT_HISTORY_KEY, JSON.stringify(normalizedHistory));
+    window.queuePendingCloudSync?.('weight_history');
 }
 
 // Calculate BMI
@@ -214,13 +226,22 @@ function displayWeightHistory(history) {
 }
 
 // Delete weight entry - make it global
-window.deleteWeightEntry = function(index) {
-    if (!confirm('Czy na pewno chcesz usunąć ten wpis?')) return;
+window.deleteWeightEntry = async function(index) {
+    const confirmed = await window.showConfirmDialog?.({
+        title: 'Usuń wpis wagi',
+        message: 'Czy na pewno chcesz usunąć ten wpis?',
+        confirmText: 'Usuń',
+        cancelText: 'Anuluj',
+        danger: true
+    });
+
+    if (!confirmed) return;
     
     const history = loadWeightHistory();
     history.splice(index, 1);
     saveWeightHistory(history);
     updateDisplay();
+    window.showToast?.('✓ Usunięto wpis wagi', 'success');
 }
 
 // Photo dialog controls
@@ -354,11 +375,11 @@ async function handlePhotoUpload(e) {
             const compressedImage = await compressImageToWebP(file);
             const profile = loadProfile() || {};
             profile.profilePic = compressedImage;
-            localStorage.setItem('gymlog_profile', JSON.stringify(profile));
+            saveProfile(profile);
             updateDisplay();
         } catch (error) {
             console.error('Error processing image:', error);
-            alert('Błąd podczas przetwarzania zdjęcia');
+            window.showToast?.('❌ Błąd podczas przetwarzania zdjęcia', 'error');
         }
     }
     // Reset input
@@ -368,13 +389,22 @@ async function handlePhotoUpload(e) {
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
     // Clear weight history
-    document.getElementById('clearWeightHistoryBtn').addEventListener('click', () => {
-        if (!confirm('Czy na pewno chcesz usunąć całą historię wagi?')) return;
+    document.getElementById('clearWeightHistoryBtn').addEventListener('click', async () => {
+        const confirmed = await window.showConfirmDialog?.({
+            title: 'Wyczyść historię wagi',
+            message: 'Czy na pewno chcesz usunąć całą historię wagi?',
+            confirmText: 'Wyczyść',
+            cancelText: 'Anuluj',
+            danger: true
+        });
+
+        if (!confirmed) return;
         
         saveWeightHistory([]);
         document.getElementById('weightChartContainer').classList.add('hidden');
         document.getElementById('weightHistoryContainer').classList.add('hidden');
         updateDisplay();
+        window.showToast?.('✓ Historia wagi została wyczyszczona', 'success');
     });
 
     // Profile form submit
@@ -388,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const oneRmFormula = document.getElementById('oneRmFormula').value;
 
         if (!gender || !age || !height) {
-            alert('Wypełnij wszystkie pola!');
+            window.showToast?.('⚠️ Wypełnij wszystkie pola!', 'warning');
             return;
         }
 
@@ -403,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         saveProfile(profile);
         updateDisplay();
-        alert('✅ Dane zapisane!');
+        window.showToast?.('✅ Dane zapisane!', 'success');
     });
 
     // Weight form submit
@@ -414,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const date = document.getElementById('weightDate').value;
 
         if (!weight || !date) {
-            alert('Wypełnij wszystkie pola!');
+            window.showToast?.('⚠️ Wypełnij wszystkie pola!', 'warning');
             return;
         }
 
@@ -431,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('weight').value = '';
         document.getElementById('weightDate').value = '';
         
-        alert('✅ Wpis dodany!');
+        window.showToast?.('✅ Wpis dodany!', 'success');
     });
 
     // Set today's date as default

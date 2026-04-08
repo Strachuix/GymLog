@@ -1,4 +1,4 @@
-const VERSION = '1.3.6';
+const VERSION = '1.4.1';
 const CACHE_NAME = `gymlog-v${VERSION}`;
 const urlsToCache = [
   '/',
@@ -8,6 +8,14 @@ const urlsToCache = [
   '/profile.html',
   '/app.js',
   '/install.js',
+  '/js/sw-manager.js',
+  '/js/wake-lock.js',
+  '/js/main-page.js',
+  '/js/profile-page.js',
+  '/js/history-page.js',
+  '/js/stats-page.js',
+  '/js/supabase-config.js',
+  '/js/supabase-sync.js',
   '/manifest.json',
   '/assets/logo.png',
   '/assets/logo-small-64.png',
@@ -16,9 +24,7 @@ const urlsToCache = [
   '/assets/logo-small-256.png',
   '/assets/logo-small-512.png',
   '/assets/dumbbell-solid-full.svg',
-  '/assets/chart-simple-solid-full.svg',
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/chart.js'
+  '/assets/chart-simple-solid-full.svg'
 ];
 
 // Install event - cache all assets
@@ -47,39 +53,50 @@ self.addEventListener('message', event => {
   }
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - serve same-origin files from cache, let cross-origin requests go directly to network
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
-        
-        // Clone the request
+
         const fetchRequest = event.request.clone();
-        
+
         return fetch(fetchRequest).then(response => {
-          // Check if valid response
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
-          
-          // Clone the response
+
           const responseToCache = response.clone();
-          
+
           caches.open(CACHE_NAME)
             .then(cache => {
               cache.put(event.request, responseToCache);
             });
-          
+
           return response;
         });
       })
       .catch(() => {
-        // Return offline page if available
-        return caches.match('/index.html');
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+
+        return new Response('Offline', {
+          status: 503,
+          statusText: 'Offline'
+        });
       })
   );
 });

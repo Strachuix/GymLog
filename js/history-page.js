@@ -328,19 +328,34 @@ function handleEditSubmit(e) {
 }
 
 // Confirm delete
-function confirmDelete(id, exercise) {
-    if (confirm(`Czy na pewno chcesz usunąć:\n${exercise}?`)) {
-        if (deleteSet(id)) {
-            showToast('✓ Usunięto trening!');
-            loadHistory();
-        } else {
-            showToast('❌ Błąd usuwania!');
-        }
+async function confirmDelete(id, exercise) {
+    const confirmed = await window.showConfirmDialog?.({
+        title: 'Usuń trening',
+        message: `Czy na pewno chcesz usunąć:\n${exercise}?`,
+        confirmText: 'Usuń',
+        cancelText: 'Anuluj',
+        danger: true
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    if (deleteSet(id)) {
+        showToast('✓ Usunięto trening!');
+        loadHistory();
+    } else {
+        showToast('❌ Błąd usuwania!');
     }
 }
 
 // Show toast notification
 function showToast(message) {
+    if (window.showToast) {
+        window.showToast(message);
+        return;
+    }
+
     const toast = document.getElementById('toast');
     toast.textContent = message;
     toast.classList.remove('hidden');

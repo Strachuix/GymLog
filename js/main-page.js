@@ -373,3 +373,61 @@ async function exportPopupToImage() {
         shareBtn.style.display = '';
     }
 }
+
+// Pokazuje minimalistyczną kartę rekordu i eksportuje ją jako PNG w proporcjach IG Story
+async function exportMinimalRecordCard(record) {
+    const card = document.getElementById('recordShareCard');
+    const cardContent = document.getElementById('recordShareCardContent');
+    const ex = document.getElementById('shareCardExercise');
+    const val = document.getElementById('shareCardValue');
+    if (!card || !cardContent || !ex || !val) return;
+
+    // Ustaw dane
+    ex.textContent = record.exercise;
+    val.textContent = (record.newWeight || record.value || '—') + 'kg';
+
+    // Pokaż kartę
+    card.classList.remove('hidden');
+
+    // Poczekaj na reflow
+    await new Promise(r => setTimeout(r, 100));
+
+    try {
+        const canvas = await html2canvas(cardContent, {
+            width: 1080,
+            height: 1920,
+            scale: 1,
+            useCORS: true,
+            backgroundColor: null
+        });
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const file = new File([blob], 'moj_rekord.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+            await navigator.share({ files: [file], title: 'Nowy rekord GymLog' });
+        } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'moj_rekord.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    } catch (err) {
+        alert('Błąd podczas generowania grafiki: ' + err.message);
+    } finally {
+        card.classList.add('hidden');
+    }
+}
+
+// Funkcja do testowania popupu rekordu
+function generateDummyRecord() {
+    const dummy = {
+        exercise: 'Leg extension',
+        previousWeight: 100,
+        newWeight: 110,
+        improvement: 10
+    };
+    showRecordModal(dummy);
+}
