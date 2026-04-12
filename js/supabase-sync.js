@@ -1,7 +1,13 @@
 (function () {
     let supabaseClient = null;
     let syncInProgress = false;
+    let pullSyncInProgress = false;
+    let pendingChanges = false;
     const OTP_COOLDOWN_MS = 60 * 1000;
+    const BACKGROUND_SYNC_INTERVAL_MS = 10000; // Push every 10 seconds
+    const BACKGROUND_PULL_INTERVAL_MS = 30000; // Pull every 30 seconds
+    let backgroundSyncIntervalId = null;
+    let backgroundPullIntervalId = null;
 
     function getConfig() {
         return window.GYMLOG_SUPABASE_CONFIG || {};
@@ -622,6 +628,158 @@
         };
     }
 
+    async function silentMergeSnapshot(localSnapshot, cloudSnapshot, userId) {
+        try {
+            const mergedSnapshot = buildMergedSnapshot(localSnapshot, cloudSnapshot);
+            const mergeResult = await pushSnapshotToCloud(mergedSnapshot, userId, { replaceExisting: false });
+            if (mergeResult.ok) {
+                replaceLocalSnapshot(mergedSnapshot);
+                localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+                console.log('Background merge sync completed silently');
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Silent merge failed:', error);
+            return false;
+        }
+    }
+
+    async function backgroundPushSync() {
+        if (syncInProgress || !isConfigured()) {
+            return;
+        }
+
+        if (!hasPendingChanges()) {
+            return; // No changes to push, skip
+        }
+
+        const user = await getCurrentUser();
+        if (!user) {
+            return;
+        }
+
+        syncInProgress = true;
+
+        try {
+            const localSnapshot = getLocalSnapshot();
+            if (!hasAnyData(localSnapshot)) {
+                clearPendingChanges();
+                syncInProgress = false;
+                return;
+            }
+
+            const result = await pushSnapshotToCloud(localSnapshot, user.id, { replaceExisting: false });
+            if (result.ok) {
+                localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+                clearPendingChanges();
+                console.log('Background push sync completed');
+            } else {
+                console.error('Background push sync failed:', result.reason);
+            }
+        } catch (error) {
+            console.error('Background push sync error:', error);
+        } finally {
+            syncInProgress = false;
+        }
+    }
+
+    async function backgroundPullSync() {
+        if (pullSyncInProgress || !isConfigured()) {
+            return;
+        }
+
+        const user = await getCurrentUser();
+        if (!user) {
+            return;
+        }
+
+        pullSyncInProgress = true;
+
+        try {
+            const localSnapshot = getLocalSnapshot();
+            const cloudSnapshot = await fetchCloudSnapshot(user.id);
+            const summary = summarizeConflict(localSnapshot, cloudSnapshot);
+
+            // Silent cloud download if local is empty
+            if (!summary.localHasData && summary.cloudHasData) {
+                replaceLocalSnapshot(cloudSnapshot);
+                window.updateAppModeUI?.();
+                console.log('Background cloud download completed');
+                pullSyncInProgress = false;
+                return;
+            }
+
+            // Silent merge if needed
+            if (summary.needsResolution) {
+                await silentMergeSnapshot(localSnapshot, cloudSnapshot, user.id);
+                console.log('Background merge completed');
+                pullSyncInProgress = false;
+                return;
+            }
+
+            // Already in sync, nothing to do
+            pullSyncInProgress = false;
+        } catch (error) {
+            console.error('Background pull sync error:', error);
+            pullSyncInProgress = false;
+        }
+    }
+
+    function ensureBackgroundSyncLoops() {
+        if (backgroundSyncIntervalId !== null) {
+            return; // Already running
+        }
+
+        console.log('Starting background sync loops...');
+
+        // Push sync every 10 seconds
+        backgroundSyncIntervalId = setInterval(() => {
+            backgroundPushSync().catch(err => {
+                console.error('Background push sync interval error:', err);
+            });
+        }, BACKGROUND_SYNC_INTERVAL_MS);
+
+        // Pull sync every 30 seconds
+        backgroundPullIntervalId = setInterval(() => {
+            backgroundPullSync().catch(err => {
+                console.error('Background pull sync interval error:', err);
+            });
+        }, BACKGROUND_PULL_INTERVAL_MS);
+
+        // Run first sync immediately
+        backgroundPushSync().catch(err => console.error('Initial push sync error:', err));
+        backgroundPullSync().catch(err => console.error('Initial pull sync error:', err));
+    }
+
+    function stopBackgroundSyncLoops() {
+        if (backgroundSyncIntervalId !== null) {
+            clearInterval(backgroundSyncIntervalId);
+            backgroundSyncIntervalId = null;
+            console.log('Stopped background push sync loop');
+        }
+
+        if (backgroundPullIntervalId !== null) {
+            clearInterval(backgroundPullIntervalId);
+            backgroundPullIntervalId = null;
+            console.log('Stopped background pull sync loop');
+        }
+    }
+
+    function markPendingChanges() {
+        pendingChanges = true;
+        console.log('Data marked as changed - pending push sync');
+    }
+
+    function clearPendingChanges() {
+        pendingChanges = false;
+        console.log('Pending changes cleared after successful push');
+    }
+
+    function hasPendingChanges() {
+        return pendingChanges;
+    }
+
     async function syncIfConfigured() {
         if (syncInProgress) {
             return { ok: false, reason: 'in-progress' };
@@ -706,15 +864,24 @@
         const user = await getCurrentUser();
         if (!user) {
             window.updateAppModeUI?.();
+            stopBackgroundSyncLoops();
             return;
         }
 
         localStorage.setItem('gymlog_app_mode', 'cloud');
 
+        // First synchronization (can show message)
         const syncResult = await syncIfConfigured();
-        if (syncResult.ok && syncResult.message) {
-            alert(syncResult.message);
+        if (syncResult.ok) {
+            if (syncResult.action === 'cloud-download') {
+                window.showToast?.('☁️ Pobrano dane z chmury.', 'info', 2000);
+            } else if (syncResult.action === 'synced' || syncResult.action === 'merge') {
+                window.showToast?.('✅ Dane zsynchronizowane.', 'success', 2000);
+            }
         }
+
+        // Start background sync loops
+        ensureBackgroundSyncLoops();
 
         window.updateAppModeUI?.();
     }
@@ -736,6 +903,7 @@
             }
 
             if (event === 'SIGNED_OUT') {
+                stopBackgroundSyncLoops();
                 window.updateAppModeUI?.();
             }
         });
@@ -750,7 +918,14 @@
         signOut,
         syncIfConfigured,
         migrateLocalDataToCloud,
-        getSession: bootstrapSession
+        getSession: bootstrapSession,
+        backgroundPushSync,
+        backgroundPullSync,
+        ensureBackgroundSyncLoops,
+        stopBackgroundSyncLoops,
+        markPendingChanges,
+        clearPendingChanges,
+        hasPendingChanges
     };
 
     document.addEventListener('DOMContentLoaded', initSupabaseSync);

@@ -10,6 +10,7 @@ function loadProfile() {
 // Save profile data
 function saveProfile(profile) {
     localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    window.GymLogCloudSync?.markPendingChanges?.();
     window.queuePendingCloudSync?.('profile');
 }
 
@@ -32,6 +33,7 @@ function saveWeightHistory(history) {
     }));
 
     localStorage.setItem(WEIGHT_HISTORY_KEY, JSON.stringify(normalizedHistory));
+    window.GymLogCloudSync?.markPendingChanges?.();
     window.queuePendingCloudSync?.('weight_history');
 }
 

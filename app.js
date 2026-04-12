@@ -707,6 +707,7 @@ function loadSets() {
 // Save sets to LocalStorage
 function saveSets(sets) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
+    window.GymLogCloudSync?.markPendingChanges?.();
     window.queuePendingCloudSync?.('training_sets');
 }
 
