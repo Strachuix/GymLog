@@ -619,6 +619,11 @@ async function updateAppModeUI() {
         ? `Konto: ${status.user.email || 'połączone'}. Zmiany czekają na zapis do chmury.`
         : `Konto: ${status.user.email || 'połączone'}. Ostatni sync: ${formatLastSyncDate(status.lastSync || localStorage.getItem(CLOUD_LAST_SYNC_KEY))}.`;
     actionBtn.textContent = 'Synchronizuj';
+
+    // Hide banner when cloud sync is active and up to date — status visible in profile
+    if (!pendingSync) {
+        banner.classList.add('hidden');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

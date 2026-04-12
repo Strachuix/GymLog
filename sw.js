@@ -1,4 +1,4 @@
-const VERSION = '1.4.3';
+const VERSION = '1.4.4';
 const CACHE_NAME = `gymlog-v${VERSION}`;
 const urlsToCache = [
   '/',
