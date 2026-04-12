@@ -388,8 +388,96 @@ async function handlePhotoUpload(e) {
     e.target.value = '';
 }
 
+// Cloud sync status functions
+function formatSyncTime(timestamp) {
+    if (!timestamp) return 'Nigdy';
+    
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return 'Nigdy';
+    
+    const now = Date.now();
+    const diff = now - date.getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (seconds < 60) return 'Teraz';
+    if (minutes < 60) return `${minutes}${minutes === 1 ? ' minutę' : ' minut'} temu`;
+    if (hours < 24) return `${hours}${hours === 1 ? ' godzinę' : ' godzin'} temu`;
+    if (days < 7) return `${days}${days === 1 ? ' dzień' : ' dni'} temu`;
+    
+    return date.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function updateSyncStatus() {
+    const appMode = localStorage.getItem('gymlog_app_mode');
+    const syncContainer = document.getElementById('syncStatusContainer');
+    
+    // Hide sync status if not in cloud mode
+    if (appMode !== 'cloud') {
+        syncContainer?.classList.add('hidden');
+        return;
+    }
+    
+    syncContainer?.classList.remove('hidden');
+    
+    const lastSync = localStorage.getItem('gymlog_cloud_last_sync');
+    const statusText = document.getElementById('syncStatusText');
+    const statusBadge = document.getElementById('syncStatusBadge');
+    const lastSyncEl = document.getElementById('lastSyncTime');
+    
+    // Check if there are pending changes
+    const hasPending = window.GymLogCloudSync?.hasPendingChanges?.() || false;
+    
+    if (hasPending) {
+        statusBadge?.classList.remove('bg-green-500');
+        statusBadge?.classList.add('bg-yellow-500');
+        statusText.textContent = 'Oczekujące na synchronizację';
+        statusText.className = 'text-sm font-bold text-yellow-400';
+    } else {
+        statusBadge?.classList.remove('bg-yellow-500');
+        statusBadge?.classList.add('bg-green-500');
+        statusText.textContent = 'Zsynchronizowane';
+        statusText.className = 'text-sm font-bold text-green-400';
+    }
+    
+    lastSyncEl.textContent = formatSyncTime(lastSync);
+}
+
+async function handleForceSync() {
+    const btn = document.getElementById('forceSyncBtn');
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Synchronizuję...';
+    
+    try {
+        const result = await window.GymLogCloudSync?.syncIfConfigured?.();
+        
+        if (result?.ok) {
+            window.showToast?.('✅ Synchronizacja zakończona', 'success', 2000);
+        } else {
+            window.showToast?.(`⚠️ Synchronizacja nie powiodła się: ${result?.reason || 'nieznany błąd'}`, 'warning', 3000);
+        }
+    } catch (error) {
+        console.error('Force sync error:', error);
+        window.showToast?.('❌ Błąd synchronizacji', 'error', 2000);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        updateSyncStatus();
+    }
+}
+
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // Update initial sync status
+    updateSyncStatus();
+    
+    // Force sync button
+    document.getElementById('forceSyncBtn')?.addEventListener('click', handleForceSync);
+
     // Clear weight history
     document.getElementById('clearWeightHistoryBtn').addEventListener('click', async () => {
         const confirmed = await window.showConfirmDialog?.({
@@ -475,6 +563,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize
     updateDisplay();
+
+    // Listen for data changes to update sync status
+    window.addEventListener('gymlog-data-changed', updateSyncStatus);
 
     // Get version from Service Worker
     if ('serviceWorker' in navigator) {

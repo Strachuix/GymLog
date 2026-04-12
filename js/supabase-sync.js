@@ -628,8 +628,53 @@
         };
     }
 
+    function areSnapshotsIdentical(snapshot1, snapshot2) {
+        // Normalize both snapshots for comparison
+        const normalize = (snap) => ({
+            sets: (snap.sets || []).map(s => ({
+                id: s.id,
+                exercise: s.exercise,
+                type: s.type || 'weighted',
+                weight: s.weight ?? null,
+                reps: s.reps ?? null,
+                addedWeight: s.addedWeight ?? null,
+                bodyWeight: s.bodyWeight ?? null,
+                duration: s.duration ?? null,
+                distance: s.distance ?? null,
+                elevation: s.elevation ?? null,
+                timestamp: normalizeTimestamp(s.timestamp)
+            })).sort((a, b) => a.id.localeCompare(b.id)),
+            profile: snap.profile ? {
+                username: snap.profile.username || 'GymLog User',
+                gender: snap.profile.gender || null,
+                age: snap.profile.age ?? null,
+                height: snap.profile.height ?? null,
+                weight: snap.profile.weight ?? null,
+                oneRmFormula: snap.profile.oneRmFormula || 'epley',
+                profilePic: snap.profile.profilePic || null
+            } : null,
+            weightHistory: (snap.weightHistory || []).map(w => ({
+                id: w.id,
+                timestamp: normalizeTimestamp(w.timestamp || w.date),
+                weight: Number(w.weight)
+            })).sort((a, b) => a.id.localeCompare(b.id))
+        });
+
+        const norm1 = normalize(snapshot1);
+        const norm2 = normalize(snapshot2);
+
+        return JSON.stringify(norm1) === JSON.stringify(norm2);
+    }
+
     async function silentMergeSnapshot(localSnapshot, cloudSnapshot, userId) {
         try {
+            // Check if snapshots are already identical
+            if (areSnapshotsIdentical(localSnapshot, cloudSnapshot)) {
+                console.log('Snapshots are already identical - no merge needed');
+                localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+                return true;
+            }
+
             const mergedSnapshot = buildMergedSnapshot(localSnapshot, cloudSnapshot);
             const mergeResult = await pushSnapshotToCloud(mergedSnapshot, userId, { replaceExisting: false });
             if (mergeResult.ok) {
@@ -799,6 +844,19 @@
         try {
             const localSnapshot = getLocalSnapshot();
             const cloudSnapshot = await fetchCloudSnapshot(user.id);
+            
+            // Check if snapshots are already identical
+            if (areSnapshotsIdentical(localSnapshot, cloudSnapshot)) {
+                localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+                window.markCloudSyncComplete?.();
+                window.updateAppModeUI?.();
+                return {
+                    ok: true,
+                    action: 'already-synced',
+                    message: 'Dane są już zsynchronizowane.'
+                };
+            }
+            
             const summary = summarizeConflict(localSnapshot, cloudSnapshot);
 
             if (!summary.localHasData && summary.cloudHasData) {
@@ -870,14 +928,10 @@
 
         localStorage.setItem('gymlog_app_mode', 'cloud');
 
-        // First synchronization (can show message)
+        // First synchronization (silent)
         const syncResult = await syncIfConfigured();
-        if (syncResult.ok) {
-            if (syncResult.action === 'cloud-download') {
-                window.showToast?.('☁️ Pobrano dane z chmury.', 'info', 2000);
-            } else if (syncResult.action === 'synced' || syncResult.action === 'merge') {
-                window.showToast?.('✅ Dane zsynchronizowane.', 'success', 2000);
-            }
+        if (!syncResult.ok) {
+            console.log('Initial sync result:', syncResult.reason);
         }
 
         // Start background sync loops
