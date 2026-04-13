@@ -250,6 +250,12 @@
         const profileDiffers = serializeProfileForCompare(localSnapshot.profile) !== serializeProfileForCompare(cloudSnapshot.profile);
         const localHasData = hasAnyData(localSnapshot);
         const cloudHasData = hasAnyData(cloudSnapshot);
+        const localHasProfile = Boolean(localSnapshot.profile);
+        const cloudHasProfile = Boolean(cloudSnapshot.profile);
+        const localProfileNeedsPush = localHasProfile && (!cloudHasProfile || profileDiffers);
+        const cloudProfileNeedsPull = cloudHasProfile && !localHasProfile;
+        const localOnlyEntries = setsDiff.localOnly + weightDiff.localOnly + (localProfileNeedsPush ? 1 : 0);
+        const cloudOnlyEntries = setsDiff.cloudOnly + weightDiff.cloudOnly + (cloudProfileNeedsPull ? 1 : 0);
 
         return {
             localHasData,
@@ -258,21 +264,92 @@
             cloudSets: cloudSnapshot.sets.length,
             localWeightEntries: localSnapshot.weightHistory.length,
             cloudWeightEntries: cloudSnapshot.weightHistory.length,
-            localHasProfile: Boolean(localSnapshot.profile),
-            cloudHasProfile: Boolean(cloudSnapshot.profile),
+            localHasProfile,
+            cloudHasProfile,
             localOnlySetIds: setsDiff.localOnly,
             cloudOnlySetIds: setsDiff.cloudOnly,
             localOnlyWeightIds: weightDiff.localOnly,
             cloudOnlyWeightIds: weightDiff.cloudOnly,
+            localOnlyEntries,
+            cloudOnlyEntries,
             profileDiffers,
-            needsResolution: localHasData && cloudHasData && (
-                setsDiff.localOnly > 0 ||
-                setsDiff.cloudOnly > 0 ||
-                weightDiff.localOnly > 0 ||
-                weightDiff.cloudOnly > 0 ||
-                profileDiffers
-            )
+            needsResolution: localHasData && cloudHasData && localOnlyEntries > 0 && cloudOnlyEntries > 0
         };
+    }
+
+    async function executeSyncDecision(localSnapshot, cloudSnapshot, userId, options = {}) {
+        const allowConflictPrompt = options.allowConflictPrompt !== false;
+
+        if (areSnapshotsIdentical(localSnapshot, cloudSnapshot)) {
+            localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+            window.markCloudSyncComplete?.();
+            return { ok: true, action: 'already-synced' };
+        }
+
+        const summary = summarizeConflict(localSnapshot, cloudSnapshot);
+
+        // Cloud has data while device does not.
+        if (!summary.localHasData && summary.cloudHasData) {
+            replaceLocalSnapshot(cloudSnapshot);
+            clearPendingChanges();
+            localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+            window.markCloudSyncComplete?.();
+            return { ok: true, action: 'cloud-download' };
+        }
+
+        // Device has data while cloud is empty.
+        if (summary.localHasData && !summary.cloudHasData) {
+            const pushResult = await pushSnapshotToCloud(localSnapshot, userId, { replaceExisting: false });
+            if (!pushResult.ok) {
+                return pushResult;
+            }
+
+            clearPendingChanges();
+            localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+            window.markCloudSyncComplete?.();
+            return { ok: true, action: 'cloud-seeded' };
+        }
+
+        // Local has additional entries, cloud does not.
+        if (summary.localOnlyEntries > 0 && summary.cloudOnlyEntries === 0) {
+            const pushResult = await pushSnapshotToCloud(localSnapshot, userId, { replaceExisting: false });
+            if (!pushResult.ok) {
+                return pushResult;
+            }
+
+            clearPendingChanges();
+            localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+            window.markCloudSyncComplete?.();
+            return { ok: true, action: 'local-uploaded' };
+        }
+
+        // Cloud has additional entries, local does not.
+        if (summary.cloudOnlyEntries > 0 && summary.localOnlyEntries === 0) {
+            const mergedSnapshot = buildMergedSnapshot(localSnapshot, cloudSnapshot);
+            replaceLocalSnapshot(mergedSnapshot);
+            clearPendingChanges();
+            localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+            window.markCloudSyncComplete?.();
+            return { ok: true, action: 'cloud-applied' };
+        }
+
+        // Both sides have missing entries - only case that needs user decision.
+        if (summary.needsResolution) {
+            if (!allowConflictPrompt) {
+                return { ok: false, reason: 'conflict-required', summary };
+            }
+
+            const resolutionResult = await resolveSnapshotConflict(summary, localSnapshot, cloudSnapshot, userId);
+            if (resolutionResult.ok) {
+                clearPendingChanges();
+                localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
+                window.markCloudSyncComplete?.();
+            }
+
+            return resolutionResult;
+        }
+
+        return { ok: true, action: 'synced' };
     }
 
     function clearAuthParamsFromUrl() {
@@ -744,29 +821,16 @@
         try {
             const localSnapshot = getLocalSnapshot();
             const cloudSnapshot = await fetchCloudSnapshot(user.id);
-            const summary = summarizeConflict(localSnapshot, cloudSnapshot);
+            const result = await executeSyncDecision(localSnapshot, cloudSnapshot, user.id, {
+                allowConflictPrompt: false
+            });
 
-            // Silent cloud download if local is empty
-            if (!summary.localHasData && summary.cloudHasData) {
-                replaceLocalSnapshot(cloudSnapshot);
+            if (result.ok && result.action !== 'already-synced') {
                 window.updateAppModeUI?.();
-                console.log('Background cloud download completed');
-                pullSyncInProgress = false;
-                return;
             }
-
-            // Silent merge if needed
-            if (summary.needsResolution) {
-                await silentMergeSnapshot(localSnapshot, cloudSnapshot, user.id);
-                console.log('Background merge completed');
-                pullSyncInProgress = false;
-                return;
-            }
-
-            // Already in sync, nothing to do
-            pullSyncInProgress = false;
         } catch (error) {
             console.error('Background pull sync error:', error);
+        } finally {
             pullSyncInProgress = false;
         }
     }
@@ -844,62 +908,11 @@
         try {
             const localSnapshot = getLocalSnapshot();
             const cloudSnapshot = await fetchCloudSnapshot(user.id);
-            
-            // Check if snapshots are already identical
-            if (areSnapshotsIdentical(localSnapshot, cloudSnapshot)) {
-                localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
-                window.markCloudSyncComplete?.();
-                window.updateAppModeUI?.();
-                return {
-                    ok: true,
-                    action: 'already-synced',
-                    message: 'Dane są już zsynchronizowane.'
-                };
-            }
-            
-            const summary = summarizeConflict(localSnapshot, cloudSnapshot);
-
-            if (!summary.localHasData && summary.cloudHasData) {
-                replaceLocalSnapshot(cloudSnapshot);
-                window.markCloudSyncComplete?.();
-                window.updateAppModeUI?.();
-                return {
-                    ok: true,
-                    action: 'cloud-download',
-                    message: 'Pobrano dane z chmury na to urządzenie.'
-                };
-            }
-
-            if (summary.localHasData && !summary.cloudHasData) {
-                const migrationResult = await migrateLocalDataToCloud();
-                if (migrationResult.ok) {
-                    localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
-                }
-                return migrationResult;
-            }
-
-            if (summary.needsResolution) {
-                const resolutionResult = await resolveSnapshotConflict(summary, localSnapshot, cloudSnapshot, user.id);
-                if (resolutionResult.ok) {
-                    localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
-                    window.updateAppModeUI?.();
-                }
-                return resolutionResult;
-            }
-
-            const pushResult = await pushSnapshotToCloud(localSnapshot, user.id, { replaceExisting: false });
-            if (!pushResult.ok) {
-                return pushResult;
-            }
-
-            localStorage.setItem('gymlog_cloud_last_sync', new Date().toISOString());
-            window.markCloudSyncComplete?.();
+            const result = await executeSyncDecision(localSnapshot, cloudSnapshot, user.id, {
+                allowConflictPrompt: true
+            });
             window.updateAppModeUI?.();
-
-            return {
-                ok: true,
-                action: 'synced'
-            };
+            return result;
         } catch (error) {
             console.error('Cloud sync failed:', error);
             return { ok: false, reason: 'sync-error', error };

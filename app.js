@@ -243,8 +243,8 @@ function queuePendingCloudSync(scope = 'general') {
     localStorage.setItem(CLOUD_MIGRATION_REQUIRED_KEY, 'true');
     updateAppModeUI();
 
-    if (navigator.onLine && window.GymLogCloudSync?.syncIfConfigured) {
-        window.GymLogCloudSync.syncIfConfigured()
+    if (navigator.onLine && window.GymLogCloudSync?.backgroundPushSync) {
+        window.GymLogCloudSync.backgroundPushSync()
             .catch(err => console.error('Auto sync failed:', err))
             .finally(() => updateAppModeUI());
     }
