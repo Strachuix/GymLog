@@ -44,12 +44,20 @@
             <div class="flex items-center gap-3">
                 <img src="assets/logo.png" alt="GymLog" class="h-10 w-auto">
             </div>
-            <button id="wakeLockIndicator" onclick="toggleWakeLock()" class="flex items-center gap-2 bg-dark-card px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors" title="Kliknij aby włączyć/wyłączyć blokadę ekranu">
-                <div id="wakeLockDot" class="w-2 h-2 bg-gray-600 rounded-full"></div>
-                <svg id="wakeLockIcon" class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path id="wakeLockIconPath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="syncStatusIndicator" type="button" class="flex items-center gap-2 bg-dark-card px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors" title="Status synchronizacji. Kliknij, aby zsynchronizować teraz">
+                    <div id="syncStatusDot" class="w-2 h-2 bg-gray-600 rounded-full"></div>
+                    <svg id="syncStatusIcon" class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                </button>
+                <button id="wakeLockIndicator" onclick="toggleWakeLock()" class="flex items-center gap-2 bg-dark-card px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors" title="Kliknij aby włączyć/wyłączyć blokadę ekranu">
+                    <div id="wakeLockDot" class="w-2 h-2 bg-gray-600 rounded-full"></div>
+                    <svg id="wakeLockIcon" class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path id="wakeLockIconPath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- Training Form -->

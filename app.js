@@ -10,6 +10,7 @@ let dataConflictResolver = null;
 let authEmailResolver = null;
 let appConfirmResolver = null;
 let appNoticeResolver = null;
+let syncIndicatorBusy = false;
 
 function inferNoticeType(message = '') {
     const text = String(message).toLowerCase();
@@ -560,6 +561,165 @@ function promptForCloudEmail(defaultValue = '') {
     });
 }
 
+function getSyncIndicatorElements() {
+    return {
+        button: document.getElementById('syncStatusIndicator'),
+        dot: document.getElementById('syncStatusDot'),
+        icon: document.getElementById('syncStatusIcon')
+    };
+}
+
+function setSyncIndicatorState(state) {
+    const { button, dot, icon } = getSyncIndicatorElements();
+
+    if (!button || !dot || !icon) {
+        return;
+    }
+
+    icon.classList.remove('animate-spin');
+
+    const states = {
+        local: {
+            dotClass: 'w-2 h-2 rounded-full bg-gray-500',
+            iconClass: 'w-4 h-4 text-gray-500',
+            title: 'Tryb lokalny: synchronizacja chmurowa jest wyłączona.',
+            disabled: true
+        },
+        loading: {
+            dotClass: 'w-2 h-2 rounded-full bg-gray-500',
+            iconClass: 'w-4 h-4 text-gray-500',
+            title: 'Sprawdzam status synchronizacji...',
+            disabled: true
+        },
+        syncing: {
+            dotClass: 'w-2 h-2 rounded-full bg-blue-400',
+            iconClass: 'w-4 h-4 text-blue-400 animate-spin',
+            title: 'Synchronizacja w toku...',
+            disabled: true
+        },
+        pending: {
+            dotClass: 'w-2 h-2 rounded-full bg-yellow-400',
+            iconClass: 'w-4 h-4 text-yellow-400',
+            title: 'Zmiany oczekują na synchronizację. Kliknij, aby zsynchronizować.',
+            disabled: false
+        },
+        synced: {
+            dotClass: 'w-2 h-2 rounded-full bg-neon-green',
+            iconClass: 'w-4 h-4 text-neon-green',
+            title: 'Dane są zsynchronizowane. Kliknij, aby odświeżyć synchronizację.',
+            disabled: false
+        },
+        noConfig: {
+            dotClass: 'w-2 h-2 rounded-full bg-orange-400',
+            iconClass: 'w-4 h-4 text-orange-400',
+            title: 'Tryb chmurowy wymaga konfiguracji Supabase.',
+            disabled: false
+        },
+        noAuth: {
+            dotClass: 'w-2 h-2 rounded-full bg-blue-400',
+            iconClass: 'w-4 h-4 text-blue-400',
+            title: 'Zaloguj się, aby uruchomić synchronizację.',
+            disabled: false
+        },
+        offline: {
+            dotClass: 'w-2 h-2 rounded-full bg-yellow-400',
+            iconClass: 'w-4 h-4 text-yellow-400',
+            title: 'Brak internetu. Synchronizacja wznawia się po powrocie online.',
+            disabled: true
+        }
+    };
+
+    const resolved = states[state] || states.loading;
+
+    dot.className = resolved.dotClass;
+    icon.className = resolved.iconClass;
+    button.title = resolved.title;
+    button.disabled = resolved.disabled;
+    button.classList.toggle('opacity-60', resolved.disabled);
+    button.classList.toggle('cursor-not-allowed', resolved.disabled);
+}
+
+async function refreshSyncIndicatorUI() {
+    const { button } = getSyncIndicatorElements();
+    if (!button) {
+        return;
+    }
+
+    if (syncIndicatorBusy) {
+        setSyncIndicatorState('syncing');
+        return;
+    }
+
+    const mode = getAppMode();
+    if (mode !== 'cloud') {
+        setSyncIndicatorState('local');
+        return;
+    }
+
+    if (!navigator.onLine) {
+        setSyncIndicatorState('offline');
+        return;
+    }
+
+    setSyncIndicatorState('loading');
+
+    const status = await window.GymLogCloudSync?.getStatusSummary?.();
+
+    if (!status?.configured) {
+        setSyncIndicatorState('noConfig');
+        return;
+    }
+
+    if (!status.user) {
+        setSyncIndicatorState('noAuth');
+        return;
+    }
+
+    const pendingSync = getPendingCloudSyncQueue().length > 0
+        || localStorage.getItem(CLOUD_MIGRATION_REQUIRED_KEY) === 'true'
+        || window.GymLogCloudSync?.hasPendingChanges?.();
+
+    setSyncIndicatorState(pendingSync ? 'pending' : 'synced');
+}
+
+async function handleSyncIndicatorClick() {
+    const { button } = getSyncIndicatorElements();
+    if (!button || button.disabled || syncIndicatorBusy) {
+        return;
+    }
+
+    if (!window.GymLogCloudSync?.syncIfConfigured) {
+        showToast('⚠️ Synchronizacja chmurowa nie jest gotowa.', 'warning', 2500);
+        return;
+    }
+
+    syncIndicatorBusy = true;
+    setSyncIndicatorState('syncing');
+
+    try {
+        const result = await window.GymLogCloudSync.syncIfConfigured();
+
+        if (result?.ok) {
+            showToast('✅ Synchronizacja zakończona', 'success', 2000);
+        } else if (result?.reason === 'not-authenticated') {
+            showToast('⚠️ Zaloguj się, aby zsynchronizować dane.', 'warning', 2800);
+            await window.GymLogCloudSync.startAuthFlow?.();
+        } else if (result?.reason === 'not-configured') {
+            showToast('⚠️ Uzupełnij konfigurację Supabase, aby uruchomić synchronizację.', 'warning', 3000);
+        } else if (result?.reason === 'in-progress') {
+            showToast('⏳ Synchronizacja już trwa.', 'info', 1800);
+        } else {
+            showToast(`⚠️ Synchronizacja nie powiodła się: ${result?.reason || 'nieznany błąd'}`, 'warning', 3000);
+        }
+    } catch (error) {
+        console.error('Sync indicator error:', error);
+        showToast('❌ Błąd synchronizacji', 'error', 2200);
+    } finally {
+        syncIndicatorBusy = false;
+        await updateAppModeUI();
+    }
+}
+
 async function updateAppModeUI() {
     const banner = document.getElementById('appModeBanner');
     const modal = document.getElementById('appModeModal');
@@ -569,6 +729,7 @@ async function updateAppModeUI() {
     const badge = document.getElementById('appModeBadge');
 
     if (!banner || !modal || !title || !description || !actionBtn || !badge) {
+        await refreshSyncIndicatorUI();
         return;
     }
 
@@ -577,6 +738,7 @@ async function updateAppModeUI() {
     if (!mode) {
         banner.classList.add('hidden');
         modal.classList.remove('hidden');
+        await refreshSyncIndicatorUI();
         return;
     }
 
@@ -590,6 +752,7 @@ async function updateAppModeUI() {
         title.textContent = 'Tryb lokalny';
         description.textContent = 'Dane zapisują się tylko na tym urządzeniu. Zaloguj się, aby zabezpieczyć je w chmurze i mieć synchronizację między urządzeniami.';
         actionBtn.textContent = 'Zaloguj';
+        await refreshSyncIndicatorUI();
         return;
     }
 
@@ -600,6 +763,7 @@ async function updateAppModeUI() {
         title.textContent = 'Tryb chmurowy — wymaga konfiguracji';
         description.textContent = 'Warstwa chmurowa jest już podpięta w aplikacji, ale trzeba jeszcze wkleić dane projektu Supabase do pliku konfiguracyjnego.';
         actionBtn.textContent = 'Konfiguruj';
+        await refreshSyncIndicatorUI();
         return;
     }
 
@@ -620,10 +784,12 @@ async function updateAppModeUI() {
         : `Konto: ${status.user.email || 'połączone'}. Ostatni sync: ${formatLastSyncDate(status.lastSync || localStorage.getItem(CLOUD_LAST_SYNC_KEY))}.`;
     actionBtn.textContent = 'Synchronizuj';
 
-    // Hide banner when cloud sync is active and up to date — status visible in profile
-    if (!pendingSync) {
+    // Banner is only needed for cloud onboarding states; sync status is handled by the header icon.
+    if (status.user) {
         banner.classList.add('hidden');
     }
+
+    await refreshSyncIndicatorUI();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -631,6 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     injectAppModeUI();
     injectCloudConflictModal();
     injectAuthEmailModal();
+    document.getElementById('syncStatusIndicator')?.addEventListener('click', handleSyncIndicatorClick);
     updateAppModeUI();
 
     if (getAppMode() === 'cloud' && window.GymLogCloudSync?.syncIfConfigured) {
@@ -648,6 +815,14 @@ window.addEventListener('online', () => {
             .catch(err => console.error('Cloud sync retry error:', err))
             .finally(() => updateAppModeUI());
     }
+});
+
+window.addEventListener('offline', () => {
+    updateAppModeUI();
+});
+
+window.addEventListener('gymlog-data-changed', () => {
+    updateAppModeUI();
 });
 
 window.updateAppModeUI = updateAppModeUI;
