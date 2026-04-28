@@ -315,6 +315,15 @@ function displayPersonalRecords(typeFilter = 'all') {
         bodyweight: '💪',
         timed: '⏱️'
     };
+
+    const getBodySideBadge = (side) => {
+        const meta = typeof getBodySideMeta === 'function' ? getBodySideMeta(side) : { symbol: '', shortLabel: '', label: '' };
+        if (!meta.label) {
+            return '';
+        }
+
+        return `<span class="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-900 text-gray-300 font-bold">${meta.shortLabel}</span>`;
+    };
     
     container.innerHTML = filteredRecords.map(record => {
         const recordType = record.type || 'weighted';
@@ -357,6 +366,7 @@ function displayPersonalRecords(typeFilter = 'all') {
                     <div class="flex items-center gap-2">
                         <span class="text-lg">${typeIcons[recordType] || '🏋️'}</span>
                         <p class="font-bold text-lg">${record.exercise}</p>
+                        ${recordType === 'timed' ? '' : getBodySideBadge(record.bodySide)}
                     </div>
                     <p class="text-xs text-gray-500">${new Date(record.date).toLocaleDateString('pl-PL')}</p>
                 </div>
@@ -1151,8 +1161,10 @@ function displayTimedChart(exerciseName, sortedSets, container) {
 // Share record functionality
 function shareRecord(exerciseName, record) {
     const recordType = record.type || 'weighted';
+    const sideMeta = typeof getBodySideMeta === 'function' ? getBodySideMeta(record.bodySide) : { label: '', symbol: '' };
+    const sideText = sideMeta.label ? ` (${sideMeta.label})` : '';
     let shareText = `🏋️ GymLog - Mój Rekord!\n\n`;
-    shareText += `💪 ${exerciseName}\n`;
+    shareText += `💪 ${exerciseName}${sideText}\n`;
     
     if (recordType === 'weighted') {
         shareText += `⚡ ${record.weight}kg × ${record.reps} powtórzeń\n`;

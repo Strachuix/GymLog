@@ -125,6 +125,36 @@
                     <datalist id="exerciseHistory"></datalist>
                 </div>
 
+                <div id="bodySideSelector" class="space-y-2">
+                    <label class="text-sm font-bold text-gray-400 uppercase tracking-wide block">Strona ciała</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button
+                            type="button"
+                            onclick="selectBodySide('left')"
+                            id="bodySideLeft"
+                            class="body-side-btn py-2.5 px-3 rounded-xl font-bold text-xs transition-all border-2 border-gray-700 bg-dark-card text-gray-400"
+                        >
+                            Lewa
+                        </button>
+                        <button
+                            type="button"
+                            onclick="selectBodySide('both')"
+                            id="bodySideBoth"
+                            class="body-side-btn py-2.5 px-3 rounded-xl font-bold text-xs transition-all border-2 border-neon-green bg-neon-green/20 text-neon-green"
+                        >
+                            Obie
+                        </button>
+                        <button
+                            type="button"
+                            onclick="selectBodySide('right')"
+                            id="bodySideRight"
+                            class="body-side-btn py-2.5 px-3 rounded-xl font-bold text-xs transition-all border-2 border-gray-700 bg-dark-card text-gray-400"
+                        >
+                            Prawa
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Fields for WEIGHTED exercises -->
                 <div id="weightedFields" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">

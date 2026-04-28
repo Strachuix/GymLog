@@ -29,10 +29,12 @@ create table if not exists public.training_sets (
     duration numeric(10,2),
     distance numeric(10,2),
     elevation numeric(10,2),
+    body_side text,
     timestamp bigint not null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
-    constraint training_sets_type_check check (type in ('weighted', 'bodyweight', 'timed'))
+    constraint training_sets_type_check check (type in ('weighted', 'bodyweight', 'timed')),
+    constraint training_sets_body_side_check check (body_side in ('left', 'right', 'both') or body_side is null)
 );
 
 create table if not exists public.weight_history (

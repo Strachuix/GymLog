@@ -858,6 +858,22 @@ function sanitizeInput(input, maxLength = 40) {
     return sanitized;
 }
 
+function normalizeBodySide(side) {
+    return side === 'left' || side === 'right' || side === 'both' ? side : null;
+}
+
+function getBodySideMeta(side) {
+    const normalized = normalizeBodySide(side);
+    const meta = {
+        left: { label: 'Lewa', shortLabel: 'L', symbol: 'L' },
+        right: { label: 'Prawa', shortLabel: 'P', symbol: 'P' },
+        both: { label: 'Obie', shortLabel: 'OB', symbol: 'OB' },
+        none: { label: '', shortLabel: '', symbol: '' }
+    };
+
+    return meta[normalized || 'none'];
+}
+
 // Load all sets from LocalStorage with migration
 function loadSets() {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -865,14 +881,23 @@ function loadSets() {
     
     const sets = JSON.parse(data);
     
-    // Migrate old data: add type: 'weighted' if missing
+    // Migrate old data: add missing fields used by current app versions.
     let needsMigration = false;
     const migrated = sets.map(set => {
-        if (!set.type) {
+        const nextSet = { ...set };
+
+        if (!nextSet.type) {
             needsMigration = true;
-            return { ...set, type: 'weighted' };
+            nextSet.type = 'weighted';
         }
-        return set;
+
+        const normalizedBodySide = normalizeBodySide(nextSet.bodySide);
+        if (nextSet.bodySide !== normalizedBodySide) {
+            needsMigration = true;
+            nextSet.bodySide = normalizedBodySide;
+        }
+
+        return nextSet;
     });
     
     // Save migrated data
@@ -994,31 +1019,62 @@ function getPersonalRecords() {
         const sets = grouped[exerciseName];
         const exerciseType = sets[0].type || 'weighted';
         
-        let maxSet;
-        if (exerciseType === 'weighted') {
-            maxSet = sets.reduce((max, set) => 
-                set.weight > max.weight ? set : max
-            );
-        } else if (exerciseType === 'bodyweight') {
-            maxSet = sets.reduce((max, set) => 
-                set.reps > max.reps ? set : max
-            );
-        } else if (exerciseType === 'timed') {
+        if (exerciseType === 'timed') {
+            let maxSet;
             // For timed: longest duration
             maxSet = sets.reduce((max, set) => 
                 set.duration > max.duration ? set : max
             );
+
+            records.push({
+                exercise: exerciseName,
+                type: exerciseType,
+                bodySide: null,
+                weight: maxSet.weight,
+                reps: maxSet.reps,
+                addedWeight: maxSet.addedWeight,
+                duration: maxSet.duration,
+                distance: maxSet.distance,
+                date: maxSet.timestamp
+            });
+
+            return;
         }
-        
-        records.push({
-            exercise: exerciseName,
-            type: exerciseType,
-            weight: maxSet.weight,
-            reps: maxSet.reps,
-            addedWeight: maxSet.addedWeight,
-            duration: maxSet.duration,
-            distance: maxSet.distance,
-            date: maxSet.timestamp
+
+        const byBodySide = {};
+        sets.forEach(set => {
+            const sideKey = normalizeBodySide(set.bodySide) || 'none';
+            if (!byBodySide[sideKey]) {
+                byBodySide[sideKey] = [];
+            }
+            byBodySide[sideKey].push(set);
+        });
+
+        Object.keys(byBodySide).forEach(sideKey => {
+            const sideSets = byBodySide[sideKey];
+            let maxSet;
+
+            if (exerciseType === 'weighted') {
+                maxSet = sideSets.reduce((max, set) =>
+                    set.weight > max.weight ? set : max
+                );
+            } else {
+                maxSet = sideSets.reduce((max, set) =>
+                    set.reps > max.reps ? set : max
+                );
+            }
+
+            records.push({
+                exercise: exerciseName,
+                type: exerciseType,
+                bodySide: sideKey === 'none' ? null : sideKey,
+                weight: maxSet.weight,
+                reps: maxSet.reps,
+                addedWeight: maxSet.addedWeight,
+                duration: maxSet.duration,
+                distance: maxSet.distance,
+                date: maxSet.timestamp
+            });
         });
     });
     
@@ -1037,8 +1093,8 @@ function getPersonalRecords() {
 }
 
 // Check if new set is a personal record
-function checkNewRecord(exercise, weight) {
-    const exerciseSets = loadSets().filter(s => s.exercise === exercise);
+function checkNewRecord(exercise, weight, bodySide = null) {
+    const exerciseSets = loadSets().filter(s => s.exercise === exercise && (s.type || 'weighted') === 'weighted');
     
     // Must have at least 1 previous set (so this is 2nd or more)
     if (exerciseSets.length < 1) {
@@ -1046,12 +1102,19 @@ function checkNewRecord(exercise, weight) {
     }
     
     // Find previous max weight
-    const previousMax = Math.max(...exerciseSets.map(s => s.weight));
+    const normalizedSide = normalizeBodySide(bodySide);
+    const sideSets = exerciseSets.filter(s => normalizeBodySide(s.bodySide) === normalizedSide);
+    if (sideSets.length < 1) {
+        return null;
+    }
+
+    const previousMax = Math.max(...sideSets.map(s => s.weight));
     
     // Check if new weight beats the record
     if (weight > previousMax) {
         return {
             exercise: exercise,
+            bodySide: normalizedSide,
             newWeight: weight,
             previousWeight: previousMax,
             improvement: weight - previousMax
@@ -1158,6 +1221,14 @@ function importFromJSON(file) {
                         type: setType,
                         timestamp: set.timestamp
                     };
+                    
+                    // Add body side (lewa/prawa/obie) if specified
+                    if (setType !== 'timed' && set.bodySide) {
+                        const normalized = normalizeBodySide(set.bodySide);
+                        if (normalized) {
+                            newSet.bodySide = normalized;
+                        }
+                    }
                     
                     // Add type-specific fields
                     if (setType === 'weighted') {

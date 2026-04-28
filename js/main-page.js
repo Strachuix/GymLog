@@ -2,6 +2,7 @@
 
 // State
 let selectedType = 'weighted';
+let selectedBodySide = 'both';
 let currentRecord = null;
 
 // Initialize page
@@ -33,6 +34,14 @@ function selectExerciseType(type) {
     document.getElementById('weightedFields').classList.toggle('hidden', type !== 'weighted');
     document.getElementById('bodyweightFields').classList.toggle('hidden', type !== 'bodyweight');
     document.getElementById('timedFields').classList.toggle('hidden', type !== 'timed');
+    document.getElementById('bodySideSelector').classList.toggle('hidden', type === 'timed');
+
+    if (type === 'timed') {
+        selectedBodySide = null;
+    } else if (!selectedBodySide) {
+        selectedBodySide = 'both';
+    }
+    updateBodySideButtons();
     
     // Load bodyweight from profile if bodyweight type selected
     if (type === 'bodyweight') {
@@ -43,6 +52,35 @@ function selectExerciseType(type) {
     
     // Update exercise suggestions for selected type
     loadExerciseHistory();
+}
+
+function updateBodySideButtons() {
+    document.querySelectorAll('.body-side-btn').forEach(btn => {
+        btn.className = 'body-side-btn py-2.5 px-3 rounded-xl font-bold text-xs transition-all border-2 border-gray-700 bg-dark-card text-gray-400';
+    });
+
+    if (!selectedBodySide) {
+        return;
+    }
+
+    const selectedButton = document.getElementById(`bodySide${selectedBodySide.charAt(0).toUpperCase() + selectedBodySide.slice(1)}`);
+    if (selectedButton) {
+        selectedButton.className = 'body-side-btn py-2.5 px-3 rounded-xl font-bold text-xs transition-all border-2 border-neon-green bg-neon-green/20 text-neon-green';
+    }
+}
+
+function selectBodySide(side) {
+    selectedBodySide = side;
+    updateBodySideButtons();
+}
+
+function getBodySideTag(side) {
+    const meta = typeof getBodySideMeta === 'function' ? getBodySideMeta(side) : { symbol: '', shortLabel: '', label: '' };
+    if (!meta.label) {
+        return '';
+    }
+
+    return `<span class="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-bold">${meta.shortLabel}</span>`;
 }
 
 // Load last entry into form
@@ -58,6 +96,13 @@ function loadLastEntry() {
     
     // Switch to correct type and fill fields
     selectExerciseType(lastSet.type);
+
+    if (lastSet.type === 'timed') {
+        selectedBodySide = null;
+    } else {
+        selectedBodySide = (typeof normalizeBodySide === 'function' ? normalizeBodySide(lastSet.bodySide) : lastSet.bodySide) || 'both';
+    }
+    updateBodySideButtons();
     
     if (lastSet.type === 'weighted') {
         document.getElementById('weight').value = lastSet.weight;
@@ -146,6 +191,7 @@ function displayRecentSets() {
                     <div class="flex items-center gap-2">
                         <span class="text-lg">${typeIcons[set.type] || '🏋️'}</span>
                         <p class="font-bold text-lg">${set.exercise}</p>
+                        ${(set.type === 'timed') ? '' : getBodySideTag(set.bodySide)}
                     </div>
                     <p class="text-xs text-gray-500">${new Date(set.timestamp).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
@@ -211,6 +257,7 @@ function handleFormSubmit(e) {
         id: crypto.randomUUID(),
         exercise: exercise,
         type: selectedType,
+        bodySide: selectedType === 'timed' ? null : ((typeof normalizeBodySide === 'function' ? normalizeBodySide(selectedBodySide) : selectedBodySide) || 'both'),
         timestamp: Date.now()
     };
     
@@ -228,7 +275,7 @@ function handleFormSubmit(e) {
         newSet.reps = reps;
         
         // Check for new record (weighted only)
-        const record = checkNewRecord(exercise, weight);
+        const record = checkNewRecord(exercise, weight, newSet.bodySide);
         if (record) {
             setTimeout(() => showRecordModal(record), 2200);
         }
@@ -289,8 +336,11 @@ function handleFormSubmit(e) {
 // Show record modal
 function showRecordModal(record) {
     currentRecord = record;
-    
-    document.getElementById('recordExercise').textContent = record.exercise;
+
+    const sideMeta = typeof getBodySideMeta === 'function' ? getBodySideMeta(record.bodySide) : { label: '', symbol: '' };
+    document.getElementById('recordExercise').textContent = sideMeta.label
+        ? `${record.exercise} (${sideMeta.label})`
+        : record.exercise;
     document.getElementById('recordPrevious').textContent = record.previousWeight + 'kg';
     document.getElementById('recordNew').textContent = record.newWeight + 'kg';
     document.getElementById('recordImprovement').textContent = record.improvement.toFixed(1);
@@ -306,7 +356,9 @@ function closeRecordModal() {
 function shareRecord() {
     if (!currentRecord) return;
     
-    const text = `🏋️‍♂️ Nowy rekord w GymLog!\n🏆 ${currentRecord.exercise}\n💪 ${currentRecord.previousWeight}kg → ${currentRecord.newWeight}kg (+${currentRecord.improvement.toFixed(1)}kg)`;
+    const sideMeta = typeof getBodySideMeta === 'function' ? getBodySideMeta(currentRecord.bodySide) : { label: '', symbol: '' };
+    const sideText = sideMeta.label ? ` (${sideMeta.label})` : '';
+    const text = `🏋️‍♂️ Nowy rekord w GymLog!\n🏆 ${currentRecord.exercise}${sideText}\n💪 ${currentRecord.previousWeight}kg → ${currentRecord.newWeight}kg (+${currentRecord.improvement.toFixed(1)}kg)`;
     
     if (navigator.share) {
         navigator.share({
@@ -425,6 +477,7 @@ async function exportMinimalRecordCard(record) {
 function generateDummyRecord() {
     const dummy = {
         exercise: 'Leg extension',
+        bodySide: 'both',
         previousWeight: 100,
         newWeight: 110,
         improvement: 10

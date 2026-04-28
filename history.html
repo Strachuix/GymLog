@@ -165,6 +165,36 @@
                         class="w-full bg-dark-bg border-2 border-gray-700 rounded-xl py-3 px-4 text-base font-semibold focus:border-neon-green focus:outline-none transition-all"
                     >
                 </div>
+
+                <div id="editBodySideSelector" class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-400 uppercase mb-2">Strona ciała</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button
+                            type="button"
+                            onclick="selectEditBodySide('left')"
+                            id="editBodySideLeft"
+                            class="edit-body-side-btn py-2 px-3 rounded-lg font-bold text-xs transition-all border-2 border-gray-700 bg-dark-bg text-gray-400"
+                        >
+                            Lewa
+                        </button>
+                        <button
+                            type="button"
+                            onclick="selectEditBodySide('both')"
+                            id="editBodySideBoth"
+                            class="edit-body-side-btn py-2 px-3 rounded-lg font-bold text-xs transition-all border-2 border-neon-green bg-neon-green/20 text-neon-green"
+                        >
+                            Obie
+                        </button>
+                        <button
+                            type="button"
+                            onclick="selectEditBodySide('right')"
+                            id="editBodySideRight"
+                            class="edit-body-side-btn py-2 px-3 rounded-lg font-bold text-xs transition-all border-2 border-gray-700 bg-dark-bg text-gray-400"
+                        >
+                            Prawa
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- Weighted Fields -->
                 <div id="editWeightedFields">

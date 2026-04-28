@@ -4,6 +4,7 @@
 let allSets = [];
 let currentTypeFilter = 'all';
 let editType = 'weighted';
+let editBodySide = 'both';
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,6 +28,43 @@ function selectEditType(type) {
     document.getElementById('editWeightedFields').classList.toggle('hidden', type !== 'weighted');
     document.getElementById('editBodyweightFields').classList.toggle('hidden', type !== 'bodyweight');
     document.getElementById('editTimedFields').classList.toggle('hidden', type !== 'timed');
+    document.getElementById('editBodySideSelector').classList.toggle('hidden', type === 'timed');
+
+    if (type === 'timed') {
+        editBodySide = null;
+    } else if (!editBodySide) {
+        editBodySide = 'both';
+    }
+    updateEditBodySideButtons();
+}
+
+function updateEditBodySideButtons() {
+    document.querySelectorAll('.edit-body-side-btn').forEach(btn => {
+        btn.className = 'edit-body-side-btn py-2 px-3 rounded-lg font-bold text-xs transition-all border-2 border-gray-700 bg-dark-bg text-gray-400';
+    });
+
+    if (!editBodySide) {
+        return;
+    }
+
+    const active = document.getElementById(`editBodySide${editBodySide.charAt(0).toUpperCase() + editBodySide.slice(1)}`);
+    if (active) {
+        active.className = 'edit-body-side-btn py-2 px-3 rounded-lg font-bold text-xs transition-all border-2 border-neon-green bg-neon-green/20 text-neon-green';
+    }
+}
+
+function selectEditBodySide(side) {
+    editBodySide = side;
+    updateEditBodySideButtons();
+}
+
+function getBodySideBadge(side) {
+    const meta = typeof getBodySideMeta === 'function' ? getBodySideMeta(side) : { symbol: '', shortLabel: '', label: '' };
+    if (!meta.label) {
+        return '';
+    }
+
+    return `<span class="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-900 text-gray-300 font-bold">${meta.shortLabel}</span>`;
 }
 
 // Filter by type
@@ -118,6 +156,7 @@ function displayHistory(sets) {
                         <div class="flex items-center gap-2">
                             <span class="text-lg">${typeIcons[setType] || '🏋️'}</span>
                             <p class="font-bold text-lg">${set.exercise}</p>
+                            ${setType === 'timed' ? '' : getBodySideBadge(set.bodySide)}
                         </div>
                         <p class="text-xs text-gray-500">${dateStr} • ${timeStr}</p>
                     </div>
@@ -200,6 +239,13 @@ function openEditModal(id) {
     
     const setType = set.type || 'weighted';
     selectEditType(setType);
+
+    if (setType === 'timed') {
+        editBodySide = null;
+    } else {
+        editBodySide = (typeof normalizeBodySide === 'function' ? normalizeBodySide(set.bodySide) : set.bodySide) || 'both';
+    }
+    updateEditBodySideButtons();
     
     // Load fields based on type
     if (setType === 'weighted') {
@@ -255,7 +301,8 @@ function handleEditSubmit(e) {
     
     let updates = {
         exercise: exercise,
-        type: editType
+        type: editType,
+        bodySide: editType === 'timed' ? null : ((typeof normalizeBodySide === 'function' ? normalizeBodySide(editBodySide) : editBodySide) || 'both')
     };
     
     // Add type-specific fields
@@ -316,6 +363,7 @@ function handleEditSubmit(e) {
         updates.reps = undefined;
         updates.addedWeight = undefined;
         updates.bodyWeight = undefined;
+        updates.bodySide = null;
     }
     
     if (updateSet(id, updates)) {

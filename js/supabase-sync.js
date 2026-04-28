@@ -82,6 +82,7 @@
             duration: set.duration ?? undefined,
             distance: set.distance ?? undefined,
             elevation: set.elevation ?? undefined,
+            bodySide: set.body_side ?? undefined,
             timestamp: normalizeTimestamp(set.timestamp)
         };
     }
@@ -540,6 +541,7 @@
             duration: set.duration ?? null,
             distance: set.distance ?? null,
             elevation: set.elevation ?? null,
+            body_side: set.bodySide ?? null,
             timestamp: normalizeTimestamp(set.timestamp),
             updated_at: new Date().toISOString()
         };
